@@ -20,6 +20,7 @@ import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '../../shared/components/Button'
 import { NotificationBell } from '../../features/notifications/components/NotificationBell'
+import { SearchLauncher } from '../../features/search/components/SearchLauncher'
 import { useUiStore } from '../../store/uiStore'
 
 interface NavigationItem {
@@ -211,6 +212,7 @@ export function AppLayout() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
+            <SearchLauncher />
             <NotificationBell />
             <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:inline-flex">
               Environment ready

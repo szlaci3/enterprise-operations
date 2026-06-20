@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M13 — Global Search
+Active Milestone: M14 — Collaboration
 
 Objective:
 
-Establish cross-entity discovery with one search vocabulary, typed results,
-filters, saved searches, and recent-search history.
+Establish contextual team collaboration with comments, mentions, discussions,
+and entity-centered activity streams.
 
 Success Criteria:
 
-* Search indexes core business entities through stable adapters
-* Results are ranked and grouped across entity types
-* Filters and saved searches support repeatable discovery
-* Recent searches improve keyboard-driven navigation
-* Search results link directly to canonical entity routes
+* Comments are durable actor-attributed domain entities
+* Mentions notify managed users and retain entity context
+* Discussions attach to operational records without duplicating them
+* Activity streams combine collaboration and business events
+* Collaboration permissions and lifecycle rules are explicit
 
 Previous Phase:
 
@@ -406,7 +406,7 @@ Delivered:
 
 ## M13 — Global Search
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -419,11 +419,26 @@ Deliverables:
 
 * Enterprise discovery layer
 
+Delivered:
+
+* Permission-aware cross-domain index for departments, users, workflows,
+  tasks, approvals, and saved reports
+* Stable source adapters producing one validated typed result contract
+* Deterministic relevance ranking for exact, prefix, title, description, and
+  token matches
+* Grouped results with status, metadata, and canonical entity links
+* Entity-type and status filters with URL-addressable search state
+* Persisted per-user recent searches with case-insensitive de-duplication
+* Persisted named saved searches retaining query and filters
+* Global Ctrl/Cmd+K keyboard entry point and responsive header launcher
+* Keyboard-focus-friendly search form and result navigation
+* Lazy source loading that keeps indexed domains out of the application shell
+
 ---
 
 ## M14 — Collaboration
 
-Status: Planned
+Status: Next
 
 Features:
 

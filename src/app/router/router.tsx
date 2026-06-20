@@ -44,6 +44,13 @@ export const appRouter = createBrowserRouter([
         ],
       },
       {
+        path: 'search',
+        lazy: async () => {
+          const { SearchPage } = await import('../../pages/SearchPage')
+          return { Component: SearchPage }
+        },
+      },
+      {
         path: 'operations',
         element: <Navigate to="/tasks" replace />,
       },

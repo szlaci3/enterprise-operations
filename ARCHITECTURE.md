@@ -432,6 +432,26 @@ The analytics feature owns validated metric snapshots, time-window and
 department segmentation, trend aggregation, operational distributions, and
 reusable accessible visualization components.
 
+Current search domain:
+
+```text
+src/
+  features/
+    search/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    searchApi.ts
+  pages/
+    SearchPage.tsx
+```
+
+The search feature owns cross-domain document normalization, permission-aware
+index composition, deterministic ranking, result filtering, saved searches,
+recent-query history, and the global keyboard launcher.
+
 ---
 
 # app/
@@ -798,8 +818,18 @@ Analytics adds:
 The route requires `analytics.view`. Analytics appears alongside the executive
 overview while remaining a separately loaded domain and permission.
 
+Global search adds:
+
+```text
+/search
+```
+
+Search is available from the application header and through Ctrl/Cmd+K.
+Authorization is enforced at index composition: only entity types backed by a
+permission in the current effective-access snapshot are loaded and returned.
+
 The dashboard, department, user, access, workflow, approval, task,
-notification, audit, reporting, analytics, and settings route modules use React Router lazy route loading.
+notification, audit, reporting, analytics, search, and settings route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -971,6 +1001,25 @@ Reporting and analytics both read current source services and validate their
 outputs, but use different contracts: reporting produces row-oriented results,
 while analytics produces metric- and series-oriented snapshots.
 
+Search uses an adapter-based transient index:
+
+```text
+Authorized domain services
+        ↓
+Search document adapters
+        ↓
+Normalized title, description, body, metadata, status, and canonical URL
+        ↓
+Deterministic relevance scoring and filters
+        ↓
+Grouped typed results
+```
+
+No search index is persisted. Every query reads current domain collections.
+Exact title, title prefix, title containment, description containment, body
+containment, and token prefix matches receive descending score weights.
+Updated timestamps break equal-score ties.
+
 ---
 
 # Persistence Strategy
@@ -1047,6 +1096,10 @@ code-owned to match implemented execution capabilities.
 Analytics snapshots are not persisted. They are derived current-state data and
 live only in TanStack Query caches keyed by period and department segment.
 
+Search preferences are persisted per user under a dedicated storage key.
+Preferences contain only recent query strings and named saved searches. Source
+documents and search results remain ephemeral.
+
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
 reach system administrators without overwriting editable custom roles.
@@ -1122,6 +1175,11 @@ source-aware column validation and unique-name enforcement before persistence.
 Analytics schemas validate periods, filters, metric formats and trend
 semantics, weekly series, distributions, and complete snapshots before data
 enters the query cache.
+
+Search schemas validate entity types, requests, filters, ranked results, saved
+searches, and per-user preference collections. Search adapters remain
+responsible for mapping source-specific fields into the common document
+vocabulary.
 
 ---
 
@@ -1251,6 +1309,10 @@ keeping unrelated report sources out of the report library bundle.
 Analytics queries dynamically import the aggregation service. The aggregation
 service then dynamically loads task, approval, and department services only
 when an analytics snapshot is requested.
+
+The always-mounted search launcher contains only navigation and keyboard
+handling. The search route and service load lazily, and the service dynamically
+imports only authorized source domains while building a query index.
 
 ---
 

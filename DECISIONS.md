@@ -1645,6 +1645,119 @@ These trade-offs are accepted for a coherent analytics foundation.
 
 ---
 
+# ADR-020
+
+## Title
+
+Permission-Aware Transient Search Index with Deterministic Ranking
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The platform now contains many navigable business entities across independent
+domains. Users need one discovery surface, but persisting a duplicated search
+index in the frontend would introduce synchronization and migration concerns.
+
+Search must also avoid exposing entities from modules the current user cannot
+view.
+
+---
+
+### Decision
+
+Build global search from source-specific adapters over current domain services.
+
+Each adapter produces a common transient search document containing:
+
+* entity type and stable identifier
+* title and description
+* normalized searchable body
+* status and display metadata
+* updated timestamp
+* canonical application URL
+
+The index includes departments, users, workflows, tasks, approvals, and saved
+reports. Before loading a domain, the search service maps its entity type to a
+required permission and checks the current effective-access snapshot.
+
+Use deterministic weighted ranking:
+
+* exact normalized title
+* title prefix
+* title containment
+* description containment
+* searchable-body containment
+* per-token title-prefix and body matches
+
+Sort equal scores by most recently updated. Group results by typed entity in
+the UI.
+
+Do not persist source documents or results. Persist only per-user recent
+queries and named saved searches with their filters. Recent queries are
+case-insensitively de-duplicated and bounded.
+
+Provide Ctrl/Cmd+K as the global entry point. Keep the always-mounted launcher
+lightweight and lazy-load the route, search service, and authorized domains.
+
+---
+
+### Alternatives Considered
+
+#### Persist a Browser Search Index
+
+Rejected because every domain mutation would need index synchronization,
+corruption recovery, and schema migration.
+
+#### Search Only Currently Cached Query Data
+
+Rejected because results would depend on which routes the user happened to
+visit and would be incomplete.
+
+#### Use One Large Concatenated String without Ranking
+
+Rejected because identifier and body matches could outrank exact entity names,
+making results unpredictable.
+
+#### Load Every Domain and Filter Results Afterwards
+
+Rejected because unauthorized entity data would enter memory before filtering
+and unnecessary domain bundles would load.
+
+#### Add a Fuzzy-Search Dependency
+
+Deferred because deterministic token and prefix scoring is sufficient for the
+current dataset and easier to explain. Fuzzy matching can be introduced when
+scale or typo tolerance creates a concrete requirement.
+
+---
+
+### Consequences
+
+Positive:
+
+* results always reflect current source data
+* permission checks apply before source domains are loaded
+* ranking is deterministic and explainable
+* canonical links provide direct navigation
+* saved and recent searches improve repeated discovery
+* new entity types can join through explicit adapters
+
+Negative:
+
+* every uncached search reads multiple authorized collections
+* ranking is lexical and does not yet tolerate substantial misspellings
+* source adapters require maintenance as domain display fields evolve
+* large future datasets will require backend indexing or incremental search
+
+These trade-offs are accepted for a coherent frontend discovery foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:
