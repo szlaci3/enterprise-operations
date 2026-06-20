@@ -195,7 +195,45 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'approvals',
-        element: <ModuleOverviewPage module="approvals" />,
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="approvals.review" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { ApprovalsPage } = await import(
+                '../../pages/ApprovalsPage'
+              )
+              return { Component: ApprovalsPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { ApprovalRequestEditorPage } = await import(
+                '../../pages/ApprovalRequestEditorPage'
+              )
+              return { Component: ApprovalRequestEditorPage }
+            },
+          },
+          {
+            path: ':approvalId',
+            lazy: async () => {
+              const { ApprovalDetailPage } = await import(
+                '../../pages/ApprovalDetailPage'
+              )
+              return { Component: ApprovalDetailPage }
+            },
+          },
+        ],
       },
       {
         path: 'reports',

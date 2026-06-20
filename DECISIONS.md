@@ -1023,6 +1023,104 @@ These trade-offs are accepted to establish a trustworthy process foundation.
 
 ---
 
+# ADR-014
+
+## Title
+
+Aggregate-Based Sequential Approvals with Append-Only History
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Enterprise approvals need to explain who was responsible, which process rules
+applied, what decision was made, and how responsibility changed over time.
+Storing only the current approval status would lose delegation, escalation,
+comments, and reviewer accountability.
+
+Approvals must also remain historically understandable after workflow
+administrators publish a newer process version.
+
+---
+
+### Decision
+
+Represent an approval request as an aggregate containing:
+
+* a reference and display snapshot for one active workflow version
+* an ordered sequence of reviewer steps
+* current request and process state
+* an append-only array of typed business events
+
+Reviewer chains execute sequentially. One step is pending while later steps
+wait. Approval unlocks the next step; rejection completes the request
+immediately. Only the currently assigned reviewer may decide or delegate.
+
+Delegation changes the active assignee but preserves the original assignee and
+records a typed event. Overdue steps may escalate to their configured target,
+also through a typed event. Decision comments are required.
+
+The aggregate is loaded, validated, changed, and replaced through the approval
+service and mock API. The service remains the transaction boundary until a
+backend can provide database transactions.
+
+---
+
+### Alternatives Considered
+
+#### Store Only Current Status
+
+Rejected because it cannot explain reviewer order, comments, reassignment, or
+the sequence of decisions.
+
+#### Parallel Approval by Default
+
+Deferred because quorum, veto, and partial-completion semantics create
+substantially more policy complexity. Sequential chains provide a clear first
+execution model.
+
+#### Reference the Latest Workflow Dynamically
+
+Rejected because historical requests could appear to follow a process version
+that did not exist when they were submitted.
+
+#### Store History Only as Free-Text Messages
+
+Rejected because typed events are safer to render, query, audit, and migrate.
+
+#### Normalize Steps and Events into Separate Persisted Collections
+
+Deferred until backend or reporting requirements require independent querying.
+The aggregate model keeps browser persistence updates coherent today.
+
+---
+
+### Consequences
+
+Positive:
+
+* every approval remains tied to its governing workflow version
+* reviewer accountability and reassignment remain explainable
+* typed history supports future audit and notification integrations
+* service rules protect decisions from stale or unauthorized callers
+* one aggregate write keeps the frontend simulation coherent
+
+Negative:
+
+* large event histories increase aggregate size
+* concurrent browser writers do not receive true transaction isolation
+* parallel, quorum, and conditional approval policies are not yet represented
+* normalized analytics will require projection or future backend tables
+
+These trade-offs are accepted for a trustworthy sequential approval
+foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

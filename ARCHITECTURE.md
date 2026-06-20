@@ -304,6 +304,29 @@ templates, lifecycle transitions, and the process designer. Each persisted
 record is one workflow version; records with the same stable `workflowKey`
 form a version history.
 
+Current approval domain:
+
+```text
+src/
+  features/
+    approvals/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    approvalsApi.ts
+  pages/
+    ApprovalsPage.tsx
+    ApprovalDetailPage.tsx
+    ApprovalRequestEditorPage.tsx
+```
+
+The approval feature owns governed decision requests, sequential reviewer
+steps, delegation, escalation, and append-only business history. Approval
+records reference an immutable workflow version and retain a workflow identity
+snapshot for durable display.
+
 ---
 
 # app/
@@ -600,7 +623,19 @@ The workflow route tree requires `workflows.view`. Management actions require
 `workflows.manage`, while service rules independently protect published
 versions from mutation.
 
-The dashboard, department, user, access, and workflow route modules use React Router lazy route loading.
+Approval management adds:
+
+```text
+/approvals
+/approvals/new
+/approvals/:approvalId
+```
+
+The approval route tree requires `approvals.review`. The same route supports
+assigned-review queues and approval intake for the current simulated session.
+Decision and delegation eligibility is enforced again in the approval service.
+
+The dashboard, department, user, access, workflow, and approval route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -682,6 +717,16 @@ active and any previous active version with the same workflow key becomes
 retired. New versions clone state and transition identifiers to prevent
 identity sharing between historical graphs.
 
+Approval requests are complete aggregate records containing their reviewer
+steps and event history. Mutations load the current aggregate, validate actor
+and lifecycle rules, append an event, update affected steps, and persist the
+replacement through the mock API. TanStack Query then synchronizes list and
+detail caches.
+
+New requests may reference only active workflow definitions. They snapshot the
+definition identifier, workflow key, name, and version. Completed requests
+retain that reference when the definition later becomes retired.
+
 ---
 
 # Persistence Strategy
@@ -731,6 +776,11 @@ The workflow mock API persists the version collection under a domain-specific
 key. Templates remain code-owned because they are curated process-design
 accelerators rather than mutable business records.
 
+The approval mock API persists request aggregates under a domain-specific key.
+History is stored inside each aggregate because mutations are currently
+single-request operations. A future backend may normalize events into an
+append-only audit or event table without changing the feature service contract.
+
 ---
 
 # Validation Strategy
@@ -771,6 +821,12 @@ duplicate edges, no outgoing transitions from terminal states, onward paths
 from every non-terminal state, and reachability from the initial state.
 Lifecycle constraints remain service responsibilities because they depend on
 the current version collection.
+
+Approval schemas validate request fields, unique reviewer chains, step
+lifecycle values, workflow snapshots, and discriminated history events.
+Services enforce cross-domain and actor-sensitive rules: active requester and
+reviewer identities, active workflow versions, requester-reviewer separation,
+current-assignee decisions, delegation eligibility, and overdue escalation.
 
 ---
 

@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M7 — Approval System
+Active Milestone: M8 — Task Management
 
 Objective:
 
-Execute realistic approval chains against the versioned workflow model,
-including reviewer decisions, escalation, delegation, and history.
+Establish day-to-day operational work management with assignment, priority,
+due dates, status tracking, and relationships to governed approvals.
 
 Success Criteria:
 
-* Approval requests execute against a specific active workflow version
-* Approval steps support assignment, decisions, comments, and timestamps
-* Escalation and delegation rules preserve accountability
-* Approval history is immutable and visible
-* Operational work can consume approval outcomes in later milestones
+* Tasks are explicit persisted domain entities
+* Assignment and lifecycle transitions preserve accountable ownership
+* Priority, due dates, and overdue state support operational triage
+* Tasks can reference approval requests and workflow context
+* Users can manage personal and team work queues efficiently
 
 Previous Phase:
 
@@ -221,7 +221,7 @@ Delivered:
 
 ## M7 — Approval System
 
-Status: Next
+Status: Completed (June 20, 2026)
 
 Features:
 
@@ -234,11 +234,24 @@ Deliverables:
 
 * Realistic enterprise workflow behavior
 
+Delivered:
+
+* Persisted approval requests bound to a specific active workflow version
+* Sequential reviewer chains with waiting, pending, approved, and rejected steps
+* Request intake with priority, category, deadline, workflow, and reviewer order
+* Reviewer decisions with required business comments and timestamps
+* Controlled delegation that preserves original step ownership
+* Overdue escalation to configured management targets
+* Append-only submitted, decision, delegation, and escalation history
+* Assigned, submitted, and organization-wide approval queues
+* Approval detail experience with process state, chain, actions, and timeline
+* Permission-protected approval routes and server-like query synchronization
+
 ---
 
 ## M8 — Task Management
 
-Status: Planned
+Status: Next
 
 Features:
 
