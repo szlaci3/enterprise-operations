@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M11 — Reporting System
+Active Milestone: M12 — Analytics Platform
 
 Objective:
 
-Establish a reusable reporting foundation with report definitions, templates,
-saved configurations, controlled execution, and export-ready outputs.
+Establish advanced operational analytics with reusable metrics, trend
+analysis, interactive segmentation, and executive dashboard composition.
 
 Success Criteria:
 
-* Reports are explicit persisted domain entities
-* Reusable templates accelerate common operational reporting
-* Saved report configurations retain filters and column choices
-* Report execution produces validated tabular results
-* Export workflows respect reporting permissions
+* Analytics metrics have explicit validated definitions
+* Trends and operational distributions are derived from current domain data
+* Interactive segmentation supports executive and operational analysis
+* Analytics dashboards compose reusable visualization components
+* Reporting and analytics share consistent source contracts
 
 Previous Phase:
 
@@ -344,7 +344,7 @@ Delivered:
 
 ## M11 — Reporting System
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -357,11 +357,25 @@ Deliverables:
 
 * Business intelligence foundation
 
+Delivered:
+
+* Persisted saved report definitions with source, columns, filters, and ownership
+* Code-owned task, approval, and audit report templates
+* Validated source-specific column catalogs and reusable report builder
+* Current-data execution adapters for tasks, approvals, and normalized audit
+* Cross-domain identity, department, workflow, and approval display joins
+* Searchable saved-report library and report detail execution experience
+* Validated uniform tabular result contract across all supported sources
+* Refreshable report runs with empty-result and loading states
+* Permission-controlled CSV export with stable column ordering and escaping
+* Separate `reports.view`, `reports.manage`, and `reports.export` capabilities
+* Protected create/edit routes and guarded destructive report controls
+
 ---
 
 ## M12 — Analytics Platform
 
-Status: Planned
+Status: Next
 
 Features:
 

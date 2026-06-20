@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
-import { ModuleOverviewPage } from '../../pages/ModuleOverviewPage'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
 
 export const appRouter = createBrowserRouter([
@@ -303,7 +302,70 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'reports',
-        element: <ModuleOverviewPage module="reports" />,
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="reports.view" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { ReportsPage } = await import('../../pages/ReportsPage')
+              return { Component: ReportsPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { AuthorizationBoundary } = await import(
+                '../../features/access/components/AuthorizationBoundary'
+              )
+              const { CreateReportPage } = await import(
+                '../../pages/ReportEditorPage'
+              )
+              return {
+                Component: () => (
+                  <AuthorizationBoundary permission="reports.manage">
+                    <CreateReportPage />
+                  </AuthorizationBoundary>
+                ),
+              }
+            },
+          },
+          {
+            path: ':reportId',
+            lazy: async () => {
+              const { ReportDetailPage } = await import(
+                '../../pages/ReportDetailPage'
+              )
+              return { Component: ReportDetailPage }
+            },
+          },
+          {
+            path: ':reportId/edit',
+            lazy: async () => {
+              const { AuthorizationBoundary } = await import(
+                '../../features/access/components/AuthorizationBoundary'
+              )
+              const { EditReportPage } = await import(
+                '../../pages/ReportEditorPage'
+              )
+              return {
+                Component: () => (
+                  <AuthorizationBoundary permission="reports.manage">
+                    <EditReportPage />
+                  </AuthorizationBoundary>
+                ),
+              }
+            },
+          },
+        ],
       },
       {
         path: 'notifications',

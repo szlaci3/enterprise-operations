@@ -1435,6 +1435,112 @@ traceability.
 
 ---
 
+# ADR-018
+
+## Title
+
+Persisted Report Definitions with Source-Specific Execution Adapters
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The platform needs reusable business reporting without introducing a free-form
+query language, duplicating source data, or coupling presentation tables
+directly to task, approval, and audit entity shapes.
+
+Saved configurations must remain durable while report results should reflect
+current operational data whenever executed.
+
+---
+
+### Decision
+
+Persist report definitions containing:
+
+* name, description, owner, and template provenance
+* one supported source: tasks, approvals, or audit
+* an ordered set of typed column keys
+* a validated common filter shape interpreted by the selected source
+
+Keep report templates and source column catalogs code-owned because they
+correspond to implemented execution capabilities.
+
+Execute reports through source-specific adapters. Each adapter loads current
+domain data, performs required identity and entity joins, applies source
+filters, and maps records into a uniform validated tabular result:
+
+* ordered column metadata
+* string-valued rows
+* report identifier and execution timestamp
+
+Persist definitions but not execution results. TanStack Query caches recent
+executions as server-like snapshots.
+
+CSV export serializes the validated result in stable column order with quoting
+and escaping. `reports.view`, `reports.manage`, and `reports.export` remain
+separate permissions.
+
+Source services are dynamically imported during execution to preserve route
+bundle boundaries.
+
+---
+
+### Alternatives Considered
+
+#### Free-Form Query Builder
+
+Deferred because arbitrary joins, expressions, permissions, validation, and
+query planning would add major complexity before concrete requirements exist.
+
+#### Persist Report Results
+
+Rejected because results would become stale copies of operational data and
+would require refresh, retention, and version semantics.
+
+#### One Generic Adapter over Raw Objects
+
+Rejected because source joins and filter meanings differ. Explicit adapters
+keep contracts understandable and type-safe.
+
+#### Let Users Enter Arbitrary Column Keys
+
+Rejected because definitions could reference fields the application cannot
+execute or export.
+
+#### Use a Third-Party Export Library
+
+Deferred because the current CSV contract requires only stable ordering,
+quoting, and escaping. Additional formats can justify a dependency later.
+
+---
+
+### Consequences
+
+Positive:
+
+* saved reports remain reusable while executions stay current
+* one result contract supports tables and exports
+* source complexity remains isolated behind explicit adapters
+* templates accelerate common operational reporting
+* permissions distinguish viewing, definition management, and export
+* the model can move behind a backend reporting API without UI redesign
+
+Negative:
+
+* supported sources, columns, and filters require code changes
+* the common filter shape contains fields irrelevant to some sources
+* executions perform frontend joins in the current simulation
+* advanced grouping, aggregation, scheduling, and formulas are deferred
+
+These trade-offs are accepted for a reliable reporting foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

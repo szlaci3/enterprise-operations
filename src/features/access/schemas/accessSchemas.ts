@@ -9,6 +9,7 @@ export const permissionKeySchema = z.enum([
   'security.view',
   'security.manage',
   'reports.view',
+  'reports.manage',
   'reports.export',
   'workflows.view',
   'workflows.manage',

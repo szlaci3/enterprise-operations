@@ -61,6 +61,12 @@ const permissionCatalog: Permission[] = [
     module: 'Reporting',
   },
   {
+    action: 'Manage',
+    description: 'Create, edit, execute, and delete saved report definitions.',
+    key: 'reports.manage',
+    module: 'Reporting',
+  },
+  {
     action: 'Export',
     description: 'Export and distribute controlled report outputs.',
     key: 'reports.export',
@@ -131,6 +137,7 @@ const seedRoles: Role[] = [
       'users.view',
       'users.manage',
       'reports.view',
+      'reports.manage',
       'workflows.view',
       'tasks.view',
       'tasks.manage',

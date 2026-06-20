@@ -392,6 +392,28 @@ the cross-domain administrative viewer, and reusable entity history panels.
 It projects from authoritative approval and task event histories rather than
 intercepting domain writes.
 
+Current reporting domain:
+
+```text
+src/
+  features/
+    reports/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    reportsApi.ts
+  pages/
+    ReportsPage.tsx
+    ReportDetailPage.tsx
+    ReportEditorPage.tsx
+```
+
+The reporting feature owns saved report definitions, code-owned templates,
+source-specific column catalogs, execution adapters, uniform tabular results,
+and CSV serialization.
+
 ---
 
 # app/
@@ -736,8 +758,21 @@ viewer as the first completed administration capability. Approval and task
 detail pages conditionally render entity audit panels for users with the same
 permission.
 
+Reporting adds:
+
+```text
+/reports
+/reports/new
+/reports/:reportId
+/reports/:reportId/edit
+```
+
+The route tree requires `reports.view`. Create and edit routes require
+`reports.manage`. CSV export is independently exposed only to users with
+`reports.export`.
+
 The dashboard, department, user, access, workflow, approval, task,
-notification, audit, and settings route modules use React Router lazy route loading.
+notification, audit, reporting, and settings route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -878,6 +913,23 @@ Every supported source event produces one normalized record containing actor,
 entity, action, timestamp, summary, and structured field changes. Global and
 entity audit queries read the same projection store.
 
+Reporting separates definition from execution:
+
+```text
+Saved report definition
+        ↓
+Source-specific execution adapter
+        ↓
+Validated uniform tabular result
+        ↓
+Table presentation or CSV serialization
+```
+
+Definitions persist source, ordered columns, filters, template provenance, and
+ownership. Executions always read current source services. Task, approval, and
+audit adapters own their source joins and filter semantics, then map into one
+string-valued row contract for presentation and export.
+
 ---
 
 # Persistence Strategy
@@ -946,6 +998,11 @@ The service only appends records for unseen event keys. No audit delete or
 update operation exists. A future backend can replace this adapter with an
 append-only audit table or event consumer.
 
+The report mock API persists saved definitions only. Execution results are
+ephemeral TanStack Query data because they represent current snapshots rather
+than durable business entities. Templates and source column catalogs remain
+code-owned to match implemented execution capabilities.
+
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
 reach system administrators without overwriting editable custom roles.
@@ -1013,6 +1070,10 @@ Audit schemas validate supported entity types and actions, actor attribution,
 source-event identity, timestamps, summaries, and structured before/after
 changes. Source domain schemas remain responsible for event validity; the audit
 normalizer is responsible for the cross-domain record contract.
+
+Report schemas validate sources, allowed column keys, filter shape, persisted
+definitions, templates, and uniform result tables. The report service performs
+source-aware column validation and unique-name enforcement before persistence.
 
 ---
 
@@ -1134,6 +1195,10 @@ application shell bundle.
 Audit query definitions also dynamically import their projection service.
 Entity history panels add only lightweight audit UI and schemas to business
 detail chunks; source services and persistence load when audit queries execute.
+
+Report routes are lazy-loaded. Execution adapters dynamically import task,
+approval, audit, user, and department services only when a report is run,
+keeping unrelated report sources out of the report library bundle.
 
 ---
 
