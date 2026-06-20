@@ -256,6 +256,31 @@ The user feature extends the entity-management pattern with lifecycle
 transitions, normalized manager relationships, department assignment, and
 membership in a persisted team catalog.
 
+Current access domain:
+
+```text
+src/
+  app/
+    session/
+      currentSession.ts
+  features/
+    access/
+      components/
+      hooks/
+      queries/
+      schemas/
+      services/
+  mocks/
+    accessApi.ts
+  pages/
+    AccessPage.tsx
+    RoleDetailPage.tsx
+    RoleEditorPage.tsx
+```
+
+The access feature owns the permission catalog, roles, assignments, effective
+access evaluation, and reusable authorization UI boundaries.
+
 ---
 
 # app/
@@ -527,7 +552,19 @@ User management adds:
 /users/:userId/edit
 ```
 
-The dashboard, department, and user route modules use React Router lazy route loading.
+Access management adds:
+
+```text
+/access
+/access/roles/new
+/access/roles/:roleId
+/access/roles/:roleId/edit
+```
+
+The access route tree is wrapped by `AuthorizationBoundary` and requires
+`security.manage`. Nested role pages inherit the same route authorization.
+
+The dashboard, department, user, and access route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -592,6 +629,17 @@ This is an intentional domain dependency: identities may reference departments,
 while departments do not require users to remain valid because their embedded
 owner snapshot is retained.
 
+Access data uses three persisted resources:
+
+* a fixed application permission catalog
+* editable role definitions containing permission keys
+* user-to-role assignment records
+
+Effective access is derived, not stored. The access service selects assigned
+roles and returns the de-duplicated union of their permission keys. Only active
+users receive effective permissions; invited, suspended, and deactivated
+identities evaluate to no access.
+
 ---
 
 # Persistence Strategy
@@ -633,6 +681,10 @@ The user mock API persists user identities and the team catalog under separate
 domain keys. User records store normalized identifiers for department, manager,
 and team relationships rather than nested copies.
 
+The access mock API persists role definitions and assignment records under
+separate keys. The permission catalog is code-owned because permission keys are
+application capabilities that must remain synchronized with implementation.
+
 ---
 
 # Validation Strategy
@@ -662,6 +714,10 @@ User services apply the same rule: field validation is schema-driven, while
 unique email and employee identifiers, manager cycles, department availability,
 team existence, and lifecycle transition rules are enforced with current domain
 context before persistence.
+
+Access services validate unique role names, referenced users and roles,
+protected system-role behavior, assigned-role deletion, and continuity of
+security administration before persisting policy changes.
 
 ---
 
@@ -781,7 +837,19 @@ Current version:
 
 * frontend-only
 * simulated authentication
-* simulated authorization
+* policy-driven simulated authorization
+
+The current session is represented by a stable seeded user identifier. Roles
+and permissions govern route and action presentation inside the frontend, but
+they are not a security boundary against a malicious client. A future backend
+must repeat every authorization decision for protected data and mutations.
+
+Reusable authorization surfaces:
+
+* `AuthorizationBoundary` protects route subtrees and renders an access-denied
+  recovery experience.
+* `PermissionGate` conditionally exposes actions and administrative controls.
+* `useAuthorization` provides effective permission checks for feature logic.
 
 Future backend integration should not require major architectural changes.
 

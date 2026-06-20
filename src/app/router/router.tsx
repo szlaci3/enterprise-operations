@@ -94,6 +94,55 @@ export const appRouter = createBrowserRouter([
         },
       },
       {
+        path: 'access',
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="security.manage" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { AccessPage } = await import('../../pages/AccessPage')
+              return { Component: AccessPage }
+            },
+          },
+          {
+            path: 'roles/new',
+            lazy: async () => {
+              const { CreateRolePage } = await import(
+                '../../pages/RoleEditorPage'
+              )
+              return { Component: CreateRolePage }
+            },
+          },
+          {
+            path: 'roles/:roleId',
+            lazy: async () => {
+              const { RoleDetailPage } = await import(
+                '../../pages/RoleDetailPage'
+              )
+              return { Component: RoleDetailPage }
+            },
+          },
+          {
+            path: 'roles/:roleId/edit',
+            lazy: async () => {
+              const { EditRolePage } = await import(
+                '../../pages/RoleEditorPage'
+              )
+              return { Component: EditRolePage }
+            },
+          },
+        ],
+      },
+      {
         path: 'approvals',
         element: <ModuleOverviewPage module="approvals" />,
       },

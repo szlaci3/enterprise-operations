@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M5 — Roles & Permissions
+Active Milestone: M6 — Workflow Engine
 
 Objective:
 
-Establish the authorization model that governs access to platform capabilities
-through reusable roles, permissions, and access policies.
+Establish the business-process model for reusable workflow definitions, states,
+transitions, and templates.
 
 Success Criteria:
 
-* Roles and permissions are explicit domain entities
-* Permission bundles can be assigned to managed users
-* Administrative access policies are visible and editable
-* Route and action authorization can consume the same permission model
-* Existing features remain usable under the simulated security model
+* Workflow definitions and versions are explicit domain entities
+* States and transitions are validated as a coherent graph
+* Reusable templates accelerate workflow creation
+* Workflow configuration persists through the abstracted data layer
+* Future approvals and tasks can execute against the same process model
 
 Previous Phase:
 
@@ -164,7 +164,7 @@ Delivered:
 
 ## M5 — Roles & Permissions
 
-Status: Next
+Status: Completed (June 20, 2026)
 
 Features:
 
@@ -178,11 +178,22 @@ Deliverables:
 * Security model
 * Authorization foundation
 
+Delivered:
+
+* Fixed, typed permission catalog grouped by platform module
+* Persisted custom and protected system roles
+* Role create, edit, detail, assignment, and guarded deletion workflows
+* Cross-role permission comparison matrix
+* Additive effective-access calculation for managed identities
+* User-profile role assignment management
+* Reusable route authorization boundary and action permission gate
+* Last-security-administrator and protected-system-role safeguards
+
 ---
 
 ## M6 — Workflow Engine
 
-Status: Planned
+Status: Next
 
 Features:
 

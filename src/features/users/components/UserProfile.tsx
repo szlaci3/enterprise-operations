@@ -28,6 +28,8 @@ import type { UserStatus } from '../schemas/userSchemas'
 import { UserServiceError } from '../services/userService'
 import { UserAvatar } from './UserAvatar'
 import { UserStatusBadge } from './UserStatusBadge'
+import { PermissionGate } from '../../access/components/PermissionGate'
+import { UserRoleAssignments } from '../../access/components/UserRoleAssignments'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -356,6 +358,10 @@ export function UserProfile() {
           )}
         </Card>
       </div>
+
+      <PermissionGate permission="security.manage">
+        <UserRoleAssignments userId={user.id} />
+      </PermissionGate>
 
       <Card className="p-5">
         <h2 className="font-semibold text-slate-950 dark:text-white">

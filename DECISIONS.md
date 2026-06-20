@@ -843,6 +843,97 @@ for M5 authorization.
 
 ---
 
+# ADR-012
+
+## Title
+
+Additive Role-Based Access Control
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The platform now has managed identities and administrative workflows that need
+a consistent authorization vocabulary. Future workflows, approvals, reports,
+and settings must be able to ask the same question: whether the current user
+has a specific capability.
+
+Authorization remains frontend-simulated until a backend exists, but the domain
+model should transfer cleanly to server enforcement.
+
+---
+
+### Decision
+
+Use additive role-based access control.
+
+The application owns a fixed catalog of typed permission keys. Editable roles
+contain sets of those keys, and separate assignment records connect users to
+roles. Effective access is the de-duplicated union of all permissions granted by
+assigned roles.
+
+Only active users receive effective permissions. System roles are immutable,
+assigned roles cannot be deleted, and assignment changes must preserve at least
+one active user with `security.manage`.
+
+Routes use `AuthorizationBoundary`; actions use `PermissionGate` or
+`useAuthorization`. The same effective-access query powers every surface.
+
+---
+
+### Alternatives Considered
+
+#### Store Permissions Directly on Users
+
+Rejected because duplicated permission sets are difficult to govern, compare,
+and update consistently across many identities.
+
+#### Deny Rules and Role Precedence
+
+Deferred because precedence rules substantially increase policy complexity.
+The current model is intentionally additive and understandable. Explicit deny
+policies can be introduced later if a concrete enterprise requirement appears.
+
+#### Persist the Permission Catalog
+
+Rejected because permission keys correspond to implemented application
+capabilities. Allowing arbitrary persisted permissions would create policies
+the application cannot enforce.
+
+#### Treat Frontend Authorization as Security Enforcement
+
+Rejected because client code and storage can be modified by the user. The
+frontend model controls product behavior and prepares contracts for future
+backend enforcement; it does not secure data by itself.
+
+---
+
+### Consequences
+
+Positive:
+
+* one typed authorization vocabulary across routes and actions
+* reusable roles reduce assignment and governance effort
+* effective access is deterministic and easy to explain
+* safeguards prevent accidental administrative lockout
+* the model maps naturally to future server-side RBAC
+
+Negative:
+
+* additive roles cannot express explicit denials
+* permission checks require current role and assignment data
+* frontend-only enforcement remains simulated security
+* protected system roles require code changes to evolve
+
+These trade-offs are accepted for a clear and scalable authorization
+foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:
