@@ -589,6 +589,88 @@ these boundaries.
 
 ---
 
+# ADR-009
+
+## Title
+
+Validated Feature-Owned Data Contracts
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The operational dashboard is the first feature to consume server-like data.
+Although the current API is simulated, future network responses and persisted
+browser values cannot be assumed to match TypeScript types at runtime.
+
+The project also needs a repeatable ownership model for queries, services,
+transport mocks, and business schemas before additional domains are added.
+
+---
+
+### Decision
+
+Each domain owns its runtime schemas, inferred TypeScript types, query keys,
+query options, service boundary, and presentation components.
+
+Mock APIs return `unknown`. Feature services validate responses with Zod before
+the data enters TanStack Query. Persisted values are also exposed as `unknown`
+by the shared storage adapter and validated by the consuming domain.
+
+TanStack Query owns dashboard snapshots and mutation synchronization. The
+dashboard service owns business-facing data operations, while the mock API owns
+latency and transport-shaped seed data.
+
+---
+
+### Alternatives Considered
+
+#### Trust TypeScript Types in the Mock API
+
+Rejected because compile-time types do not protect against corrupted storage,
+future network responses, or accidental fixture drift.
+
+#### Validate Inside React Components
+
+Rejected because it duplicates validation, couples presentation to transport
+concerns, and allows invalid data into the query cache.
+
+#### Store Dashboard Data in Zustand
+
+Rejected because dashboard snapshots are server-like cached data and belong in
+TanStack Query.
+
+#### Add a Charting Library
+
+Deferred because the current KPI and workload visualizations are small,
+accessible, and maintainable with typed SVG components. A charting dependency
+can be reconsidered when M12 requires richer interactions.
+
+---
+
+### Consequences
+
+Positive:
+
+* runtime-safe boundaries for mock, persisted, and future network data
+* clear domain ownership and repeatable feature structure
+* query caches contain validated business objects
+* backend replacement can occur behind feature services
+
+Negative:
+
+* schemas add some duplication to fixture construction
+* transport validation has a small runtime cost
+* feature modules contain more files than page-local implementations
+
+These trade-offs are accepted for reliability and long-term domain scalability.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

@@ -12,27 +12,30 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 # Current Phase
 
-## Phase 1 — Foundation
+## Phase 2 — Core Operations
 
 Status: ACTIVE
 
-Active Milestone: M2 — Operational Dashboard
+Active Milestone: M3 — Department Management
 
 Objective:
 
-Establish a scalable architecture that can support significant future growth.
+Establish the organization model and reusable entity-management patterns that
+future workflows, permissions, and reporting capabilities will build upon.
 
 Success Criteria:
 
-* Core application shell exists
-* Routing established
-* Layout system established
-* Design system foundations established
-* State management configured
-* Query layer configured
-* Domain structure defined
-* Mock data infrastructure established
-* Local persistence strategy established
+* Department domain model is explicit and validated
+* Department list and detail routes are functional
+* Create and edit workflows use shared form patterns
+* Ownership relationships are represented
+* Changes persist through the abstracted data layer
+
+Previous Phase:
+
+* Phase 1 — Foundation completed June 20, 2026
+* Application shell, query layer, domain structure, mock API infrastructure,
+  local persistence, and the first business-facing dashboard are operational
 
 ---
 
@@ -71,7 +74,7 @@ Delivered:
 
 ## M2 — Operational Dashboard
 
-Status: Next
+Status: Completed (June 20, 2026)
 
 Features:
 
@@ -88,11 +91,21 @@ Deliverables:
 * Dashboard architecture
 * Analytics foundation
 
+Delivered:
+
+* Typed and schema-validated operational dashboard snapshot
+* Period-based KPI cards with trends and accessible sparklines
+* Work intake and completion analytics with accessible chart data
+* Service throughput, open-work, SLA, and health summaries
+* Persisted alert acknowledgement workflow
+* Recent cross-functional activity feed
+* Query loading, refresh, validation, and recovery states
+
 ---
 
 ## M3 — Department Management
 
-Status: Planned
+Status: Next
 
 Features:
 

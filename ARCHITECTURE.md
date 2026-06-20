@@ -186,9 +186,31 @@ src/
     uiStore.ts
 ```
 
-Feature directories will be introduced with the first domain milestone. Route
-pages remain composition-focused and should delegate business behavior to those
-feature modules as they are added.
+Feature directories were introduced with the dashboard domain. Route pages
+remain composition-focused and delegate business behavior to their owning
+feature modules.
+
+Current dashboard domain:
+
+```text
+src/
+  features/
+    dashboard/
+      components/
+      queries/
+      schemas/
+      services/
+      utils/
+  mocks/
+    dashboardApi.ts
+  services/
+    persistence/
+      browserStorage.ts
+```
+
+`OverviewPage` is now a route-level composition boundary that renders the
+dashboard feature. Dashboard business types, query definitions, formatting,
+and widgets remain owned by the dashboard domain.
 
 ---
 
@@ -461,6 +483,28 @@ Local Persistence
 
 This architecture should allow future replacement of the mock layer with a real backend.
 
+The dashboard establishes the first complete implementation of this flow:
+
+```text
+OperationalDashboard
+   ↓
+dashboardSnapshotOptions
+   ↓
+dashboardService
+   ↓
+dashboardApi
+   ↓
+browserStorage (acknowledged alert identifiers only)
+```
+
+Mock API responses are intentionally returned as `unknown` and validated with
+Zod inside the feature service. This keeps the UI and query cache insulated
+from malformed transport data and mirrors a future network boundary.
+
+Query keys are defined by the owning feature. Reporting-period changes create
+separate cache entries, while alert mutations invalidate the dashboard key
+family so all active period snapshots remain consistent.
+
 ---
 
 # Persistence Strategy
@@ -487,6 +531,12 @@ localStorage.getItem(...)
 ```
 
 inside feature code.
+
+`browserStorage` is the initial persistence adapter. It serializes JSON,
+contains browser storage failures, falls back to session-memory behavior when
+storage is unavailable, and exposes data as `unknown` so callers must validate
+persisted values before use. The dashboard currently persists only
+acknowledged alert identifiers.
 
 ---
 
@@ -594,6 +644,10 @@ Potential future optimizations:
 * lazy loading
 
 Optimization work should follow measurable need.
+
+The operational dashboard uses lightweight SVG charts rather than introducing
+a charting dependency for its initial KPI and workload visualizations. Every
+chart has a textual or tabular equivalent for accessibility.
 
 ---
 
