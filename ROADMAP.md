@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M8 — Task Management
+Active Milestone: M9 — Notifications Center
 
 Objective:
 
-Establish day-to-day operational work management with assignment, priority,
-due dates, status tracking, and relationships to governed approvals.
+Establish a cross-platform notification inbox with event-driven messages,
+read state, preferences, and subscriptions to operational activity.
 
 Success Criteria:
 
-* Tasks are explicit persisted domain entities
-* Assignment and lifecycle transitions preserve accountable ownership
-* Priority, due dates, and overdue state support operational triage
-* Tasks can reference approval requests and workflow context
-* Users can manage personal and team work queues efficiently
+* Notifications are explicit persisted entities addressed to managed users
+* Domain events can produce actionable notifications
+* Read and unread state is synchronized across notification surfaces
+* Users can manage event and delivery preferences
+* Notifications link back to the originating business record
 
 Previous Phase:
 
@@ -251,7 +251,7 @@ Delivered:
 
 ## M8 — Task Management
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -265,11 +265,25 @@ Deliverables:
 
 * Day-to-day operations functionality
 
+Delivered:
+
+* Persisted operational tasks with explicit assignee and department ownership
+* Backlog, in-progress, blocked, completed, and cancelled lifecycle
+* Guarded lifecycle transitions with required operational notes
+* Priority, due-date, completion, and overdue tracking
+* Optional durable relationships to governed approval requests
+* Append-only creation, update, reassignment, and status activity history
+* Personal, department, and organization-wide work queues
+* Search, filtering, list view, and status board over one query model
+* Task create, edit, detail, reassignment, and status progression workflows
+* Typed task permissions and direct-route authorization for management pages
+* System-role capability synchronization for evolving code-owned permissions
+
 ---
 
 ## M9 — Notifications Center
 
-Status: Planned
+Status: Next
 
 Features:
 

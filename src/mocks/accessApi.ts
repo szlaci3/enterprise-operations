@@ -84,6 +84,18 @@ const permissionCatalog: Permission[] = [
     key: 'approvals.review',
     module: 'Approvals',
   },
+  {
+    action: 'View',
+    description: 'View operational tasks, queues, and delivery status.',
+    key: 'tasks.view',
+    module: 'Tasks',
+  },
+  {
+    action: 'Manage',
+    description: 'Create, assign, edit, and progress operational tasks.',
+    key: 'tasks.manage',
+    module: 'Tasks',
+  },
 ]
 
 const allPermissionKeys = permissionCatalog.map((permission) => permission.key)
@@ -114,6 +126,8 @@ const seedRoles: Role[] = [
       'users.manage',
       'reports.view',
       'workflows.view',
+      'tasks.view',
+      'tasks.manage',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -131,6 +145,7 @@ const seedRoles: Role[] = [
       'reports.view',
       'reports.export',
       'approvals.review',
+      'tasks.view',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -189,7 +204,23 @@ const delay = (milliseconds: number) =>
 
 function readRoles(): Role[] {
   const persisted = rolesSchema.safeParse(browserStorage.read(rolesStorageKey))
-  if (persisted.success) return persisted.data
+  if (persisted.success) {
+    const synchronized = persisted.data.map((role) => {
+      const systemRole = seedRoles.find(
+        (seedRole) => seedRole.id === role.id && seedRole.isSystem,
+      )
+      return systemRole
+        ? {
+            ...role,
+            description: systemRole.description,
+            name: systemRole.name,
+            permissionKeys: systemRole.permissionKeys,
+          }
+        : role
+    })
+    browserStorage.write(rolesStorageKey, synchronized)
+    return synchronized
+  }
   browserStorage.write(rolesStorageKey, seedRoles)
   return seedRoles
 }

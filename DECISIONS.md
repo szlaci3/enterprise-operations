@@ -1121,6 +1121,110 @@ foundation.
 
 ---
 
+# ADR-015
+
+## Title
+
+Durable Operational Tasks with Explicit Lifecycle and Activity History
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Day-to-day enterprise work needs more than a mutable title and checkbox.
+Operational teams must understand accountable ownership, urgency, deadlines,
+blockers, completion, reassignment, and the governed decision that may have
+authorized the work.
+
+Deleting or silently overwriting task state would make delivery history and
+future audit integration unreliable.
+
+---
+
+### Decision
+
+Represent tasks as durable aggregates containing:
+
+* creator, assignee, and accountable department identifiers
+* priority, due date, current lifecycle state, and completion timestamp
+* an optional approval request relationship
+* an append-only array of typed activity events
+
+Use the lifecycle states `backlog`, `in-progress`, `blocked`, `completed`, and
+`cancelled`. A service-owned transition map defines permitted changes. Every
+actual status change requires a note and appends a typed event. Reassignment
+and general edits also append events.
+
+Tasks are not deleted. Completed work may reopen to in-progress, cancelled work
+may return to backlog, and blocked work returns to in-progress before it can be
+completed.
+
+Personal, department, list, and board queues are derived from the same
+TanStack Query collection. The board is a presentation of lifecycle state, not
+a separate persisted model.
+
+Introduce `tasks.view` and `tasks.manage` permissions. Protected system roles
+are synchronized with code-owned definitions when read so new application
+capabilities reach existing persisted installations without replacing custom
+role policy.
+
+---
+
+### Alternatives Considered
+
+#### Boolean Completion Only
+
+Rejected because it cannot represent queued, active, blocked, or cancelled
+work and provides no safe transition rules.
+
+#### Hard Delete Completed or Cancelled Tasks
+
+Rejected because approvals, reports, audit history, and operational review need
+stable work references.
+
+#### Persist Separate Kanban Columns
+
+Rejected because columns would duplicate lifecycle state and create
+synchronization risk. Board columns are derived from task status.
+
+#### Store Activity as Free Text
+
+Rejected because typed events are safer for future notifications, auditing,
+reporting, and migration.
+
+#### Automatically Add New Permissions to Every Persisted Role
+
+Rejected because that would silently broaden editable custom roles. Only
+protected system roles are synchronized from code.
+
+---
+
+### Consequences
+
+Positive:
+
+* operational ownership and delivery state remain explicit
+* lifecycle changes are explainable and service-enforced
+* approval decisions can lead to durable follow-through work
+* one cached collection supports multiple efficient queue experiences
+* typed events prepare the domain for notifications and audit logging
+* permission evolution does not accidentally expand custom roles
+
+Negative:
+
+* task aggregates grow as activity accumulates
+* no hard deletion means archives will eventually need stronger filtering
+* the initial lifecycle does not include subtasks or dependency graphs
+* frontend persistence cannot guarantee multi-user transaction isolation
+
+These trade-offs are accepted for a coherent operational work foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

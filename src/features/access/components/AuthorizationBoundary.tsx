@@ -1,12 +1,15 @@
 import { LockKeyhole } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { Card } from '../../../shared/components/Card'
 import type { PermissionKey } from '../schemas/accessSchemas'
 import { useAuthorization } from '../hooks/useAuthorization'
 
 export function AuthorizationBoundary({
+  children,
   permission,
 }: {
+  children?: ReactNode
   permission: PermissionKey
 }) {
   const { accessQuery, can } = useAuthorization()
@@ -41,5 +44,5 @@ export function AuthorizationBoundary({
     )
   }
 
-  return <Outlet />
+  return children ?? <Outlet />
 }

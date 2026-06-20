@@ -23,7 +23,74 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'operations',
-        element: <ModuleOverviewPage module="operations" />,
+        element: <Navigate to="/tasks" replace />,
+      },
+      {
+        path: 'tasks',
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="tasks.view" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { TasksPage } = await import('../../pages/TasksPage')
+              return { Component: TasksPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { AuthorizationBoundary } = await import(
+                '../../features/access/components/AuthorizationBoundary'
+              )
+              const { CreateTaskPage } = await import(
+                '../../pages/TaskEditorPage'
+              )
+              return {
+                Component: () => (
+                  <AuthorizationBoundary permission="tasks.manage">
+                    <CreateTaskPage />
+                  </AuthorizationBoundary>
+                ),
+              }
+            },
+          },
+          {
+            path: ':taskId',
+            lazy: async () => {
+              const { TaskDetailPage } = await import(
+                '../../pages/TaskDetailPage'
+              )
+              return { Component: TaskDetailPage }
+            },
+          },
+          {
+            path: ':taskId/edit',
+            lazy: async () => {
+              const { AuthorizationBoundary } = await import(
+                '../../features/access/components/AuthorizationBoundary'
+              )
+              const { EditTaskPage } = await import(
+                '../../pages/TaskEditorPage'
+              )
+              return {
+                Component: () => (
+                  <AuthorizationBoundary permission="tasks.manage">
+                    <EditTaskPage />
+                  </AuthorizationBoundary>
+                ),
+              }
+            },
+          },
+        ],
       },
       {
         path: 'departments',

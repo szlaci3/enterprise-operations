@@ -27,7 +27,7 @@ interface NavigationItem {
 
 const primaryNavigation: NavigationItem[] = [
   { icon: LayoutDashboard, label: 'Overview', to: '/overview' },
-  { icon: ClipboardList, label: 'Operations', to: '/operations' },
+  { icon: ClipboardList, label: 'Tasks', to: '/tasks' },
   { icon: Waypoints, label: 'Workflows', to: '/workflows' },
   { icon: CheckSquare2, label: 'Approvals', to: '/approvals' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },

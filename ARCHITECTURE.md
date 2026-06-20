@@ -327,6 +327,29 @@ steps, delegation, escalation, and append-only business history. Approval
 records reference an immutable workflow version and retain a workflow identity
 snapshot for durable display.
 
+Current task domain:
+
+```text
+src/
+  features/
+    tasks/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    tasksApi.ts
+  pages/
+    TasksPage.tsx
+    TaskDetailPage.tsx
+    TaskEditorPage.tsx
+```
+
+The task feature owns operational work records, accountable assignment,
+lifecycle transitions, approval relationships, triage queues, and append-only
+task activity. Tasks are retained after completion or cancellation rather than
+deleted so operational history remains navigable.
+
 ---
 
 # app/
@@ -635,7 +658,22 @@ The approval route tree requires `approvals.review`. The same route supports
 assigned-review queues and approval intake for the current simulated session.
 Decision and delegation eligibility is enforced again in the approval service.
 
-The dashboard, department, user, access, workflow, and approval route modules use React Router lazy route loading.
+Task management adds:
+
+```text
+/tasks
+/tasks/new
+/tasks/:taskId
+/tasks/:taskId/edit
+```
+
+The task route tree requires `tasks.view`. Create and edit pages use
+`AuthorizationBoundary` as a direct content boundary and require
+`tasks.manage`; management actions use the same permission through
+`PermissionGate`. `/operations` redirects to the task queue for backward
+compatibility with the original shell route.
+
+The dashboard, department, user, access, workflow, approval, and task route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -727,6 +765,15 @@ New requests may reference only active workflow definitions. They snapshot the
 definition identifier, workflow key, name, and version. Completed requests
 retain that reference when the definition later becomes retired.
 
+Tasks are persisted as complete aggregates containing current assignment,
+schedule, lifecycle state, optional approval reference, and typed activity
+events. Services validate cross-domain relationships before writes. Task
+mutations update detail caches and invalidate the shared task key family.
+
+Personal, department, list, and board queues are derived views over the same
+cached collection. TanStack Query remains the source of server-like task data;
+queue filters and view mode remain local UI state.
+
 ---
 
 # Persistence Strategy
@@ -781,6 +828,14 @@ History is stored inside each aggregate because mutations are currently
 single-request operations. A future backend may normalize events into an
 append-only audit or event table without changing the feature service contract.
 
+The task mock API persists task aggregates under a domain-specific key. Missing
+or invalid collections are replaced with realistic seeded work. Completed and
+cancelled tasks remain in storage to preserve operational history.
+
+The access mock synchronizes protected system roles with their code-owned seed
+definitions when roles are read. This ensures newly introduced permission keys
+reach system administrators without overwriting editable custom roles.
+
 ---
 
 # Validation Strategy
@@ -827,6 +882,13 @@ lifecycle values, workflow snapshots, and discriminated history events.
 Services enforce cross-domain and actor-sensitive rules: active requester and
 reviewer identities, active workflow versions, requester-reviewer separation,
 current-assignee decisions, delegation eligibility, and overdue escalation.
+
+Task schemas validate task fields, lifecycle values, priorities, and
+discriminated activity events. Services enforce active assignees, available
+departments, valid approval references, active actors, and an explicit
+transition map. Completed tasks may be reopened to in-progress; cancelled work
+may return to backlog; blocked work must return to in-progress before
+completion.
 
 ---
 
