@@ -6,7 +6,6 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
-  History,
   Pencil,
   UserRound,
 } from 'lucide-react'
@@ -20,8 +19,9 @@ import { PageHeader } from '../../../shared/components/PageHeader'
 import { PermissionGate } from '../../access/components/PermissionGate'
 import { approvalDetailOptions } from '../../approvals/queries/approvalQueries'
 import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
+import { EntityCollaborationPanel } from '../../collaboration/components/EntityCollaborationPanel'
+import type { CollaborationBusinessEvent } from '../../collaboration/schemas/collaborationSchemas'
 import { departmentDetailOptions } from '../../departments/queries/departmentQueries'
-import { UserAvatar } from '../../users/components/UserAvatar'
 import { userListOptions } from '../../users/queries/userQueries'
 import {
   taskDetailOptions,
@@ -133,6 +133,25 @@ export function TaskDetail() {
     !['completed', 'cancelled'].includes(task.status) &&
     new Date(task.dueDate).getTime() < currentTime
   const options = transitionOptions[task.status]
+  const businessEvents: CollaborationBusinessEvent[] = task.events.map(
+    (event) => ({
+      actorUserId: event.actorUserId,
+      createdAt: event.createdAt,
+      id: event.id,
+      summary:
+        event.type === 'status-changed'
+          ? event.note
+          : event.type === 'reassigned'
+            ? `${
+                userById.get(event.fromUserId)?.firstName ??
+                'Previous assignee'
+              } → ${
+                userById.get(event.toUserId)?.firstName ?? 'New assignee'
+              }`
+            : event.summary,
+      title: eventTitle(event),
+    }),
+  )
 
   const submitTransition = handleSubmit(async (values) => {
     try {
@@ -218,54 +237,11 @@ export function TaskDetail() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
-        <Card className="overflow-hidden">
-          <div className="border-b border-slate-200 p-5 dark:border-slate-800">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <History aria-hidden="true" className="size-5 text-brand-600" />
-              Task activity
-            </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Durable ownership and lifecycle history.
-            </p>
-          </div>
-          <ol className="space-y-5 p-5">
-            {[...task.events].reverse().map((event) => {
-              const actor = userById.get(event.actorUserId)
-              return (
-                <li className="flex gap-3" key={event.id}>
-                  {actor ? (
-                    <UserAvatar className="size-9" user={actor} />
-                  ) : (
-                    <span className="size-9 rounded-full bg-slate-200" />
-                  )}
-                  <div>
-                    <p className="text-sm font-semibold">{eventTitle(event)}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">
-                      {actor
-                        ? `${actor.firstName} ${actor.lastName}`
-                        : 'Unknown actor'}{' '}
-                      · {new Date(event.createdAt).toLocaleString()}
-                    </p>
-                    {event.type === 'status-changed' ? (
-                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                        {event.note}
-                      </p>
-                    ) : null}
-                    {event.type === 'reassigned' ? (
-                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                        {userById.get(event.fromUserId)?.firstName ??
-                          'Previous assignee'}{' '}
-                        →{' '}
-                        {userById.get(event.toUserId)?.firstName ??
-                          'New assignee'}
-                      </p>
-                    ) : null}
-                  </div>
-                </li>
-              )
-            })}
-          </ol>
-        </Card>
+        <EntityCollaborationPanel
+          businessEvents={businessEvents}
+          entityId={task.id}
+          entityType="task"
+        />
 
         <div className="space-y-6">
           <EntityAuditPanel entityId={task.id} entityType="task" />

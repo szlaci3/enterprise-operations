@@ -1758,6 +1758,115 @@ These trade-offs are accepted for a coherent frontend discovery foundation.
 
 ---
 
+# ADR-021
+
+## Title
+
+Entity-Scoped Collaboration with Merged Operational Activity
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Operational collaboration needs durable context. A detached chat surface would
+force users to reconstruct which task or approval a decision concerned, while
+embedding comments directly into every source entity would duplicate schemas,
+mutation rules, and notification behavior.
+
+The platform also already has authoritative task and approval event histories.
+Collaboration should enrich those histories without copying or replacing them.
+
+---
+
+### Decision
+
+Create a dedicated collaboration domain whose comments reference an entity by
+typed `entityType` and stable `entityId`.
+
+Comments contain actor attribution, body, mention identities, creation and edit
+timestamps, an optional top-level parent, and a soft-deletion timestamp.
+Replies are limited to one level so discussions remain readable and lifecycle
+rules remain predictable.
+
+Use explicit capabilities:
+
+* `collaboration.view`
+* `collaboration.contribute`
+* `collaboration.moderate`
+
+Authors may edit or remove their own comments. Moderators may act on any
+comment. Removal preserves a tombstone and reply relationships rather than
+deleting history.
+
+Mentions select active managed-user identifiers rather than relying on
+unvalidated free-text handles. Notification reconciliation projects one
+recipient-addressed message per mentioned user and retains the source entity's
+canonical URL.
+
+Use one reusable entity collaboration panel. Source detail pages provide typed
+business-event summaries; the panel merges them with collaboration records by
+timestamp. Authoritative source events remain in their owning domains.
+
+---
+
+### Alternatives Considered
+
+#### Add a Standalone Team Chat
+
+Rejected because conversations would lose operational context and introduce a
+separate navigation and retention model.
+
+#### Embed Comments in Tasks and Approvals
+
+Rejected because each source domain would repeat comment schemas, mention
+validation, permissions, persistence, and notification integration.
+
+#### Copy Business Events into Collaboration Storage
+
+Rejected because duplicated event records would require synchronization and
+could disagree with authoritative task or approval history.
+
+#### Parse Free-Text `@handles`
+
+Deferred because display names are not stable identifiers and ambiguous text
+parsing can notify the wrong person. The current mention picker stores managed
+user IDs while allowing comment prose to remain unrestricted.
+
+#### Permanently Delete Comments
+
+Rejected because removing records would break discussion context and weaken
+the operational history expected from enterprise software.
+
+---
+
+### Consequences
+
+Positive:
+
+* discussions remain attached to operational records
+* one service enforces mention and lifecycle rules consistently
+* merged timelines show decisions and conversation in chronological context
+* notification links return users to the exact source record
+* soft deletion preserves thread integrity
+* additional entity types can adopt the shared panel and reference contract
+
+Negative:
+
+* merged activity is assembled client-side from two sources
+* reply depth is intentionally limited
+* mention selection is explicit rather than inline autocomplete
+* a future backend must enforce the same permissions and entity visibility
+* high-volume discussions will eventually require pagination
+
+These trade-offs are accepted for a coherent contextual collaboration
+foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

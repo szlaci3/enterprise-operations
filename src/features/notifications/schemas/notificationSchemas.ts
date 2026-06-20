@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const notificationCategorySchema = z.enum([
   'approval',
+  'collaboration',
   'task',
   'system',
 ])
@@ -18,6 +19,7 @@ export const notificationSubscriptionSchema = z.enum([
   'approval-decision',
   'approval-delegated',
   'approval-escalated',
+  'collaboration-mention',
   'task-assigned',
   'task-status',
 ])

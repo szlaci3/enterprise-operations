@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   notificationPreferencesListSchema,
   notificationPreferencesSchema,
@@ -21,9 +22,28 @@ const defaultSubscriptions: NotificationPreferences['subscriptions'] = {
   'approval-decision': true,
   'approval-delegated': true,
   'approval-escalated': true,
+  'collaboration-mention': true,
   'task-assigned': true,
   'task-status': true,
 }
+
+const migratablePreferencesSchema = z.array(
+  z.object({
+    emailDigest: z.enum(['off', 'daily', 'weekly']),
+    inAppEnabled: z.boolean(),
+    subscriptions: z.object({
+      'approval-assigned': z.boolean(),
+      'approval-decision': z.boolean(),
+      'approval-delegated': z.boolean(),
+      'approval-escalated': z.boolean(),
+      'collaboration-mention': z.boolean().optional(),
+      'task-assigned': z.boolean(),
+      'task-status': z.boolean(),
+    }),
+    updatedAt: z.string().datetime(),
+    userId: z.string(),
+  }),
+)
 
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
@@ -44,11 +64,24 @@ function writeStore(store: NotificationStore) {
 }
 
 function readPreferences(): NotificationPreferences[] {
-  const persisted = notificationPreferencesListSchema.safeParse(
-    browserStorage.read(notificationPreferencesKey),
-  )
+  const stored = browserStorage.read(notificationPreferencesKey)
+  const persisted = notificationPreferencesListSchema.safeParse(stored)
   if (persisted.success) {
     return persisted.data
+  }
+  const migratable = migratablePreferencesSchema.safeParse(stored)
+  if (migratable.success) {
+    const migrated = notificationPreferencesListSchema.parse(
+      migratable.data.map((preference) => ({
+        ...preference,
+        subscriptions: {
+          ...defaultSubscriptions,
+          ...preference.subscriptions,
+        },
+      })),
+    )
+    browserStorage.write(notificationPreferencesKey, migrated)
+    return migrated
   }
   browserStorage.write(notificationPreferencesKey, [])
   return []

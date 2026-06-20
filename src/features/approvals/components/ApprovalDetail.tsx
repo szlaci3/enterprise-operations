@@ -9,7 +9,6 @@ import {
   Clock3,
   Forward,
   GitBranch,
-  History,
   Send,
   X,
 } from 'lucide-react'
@@ -21,8 +20,9 @@ import { Button } from '../../../shared/components/Button'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
 import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
+import { EntityCollaborationPanel } from '../../collaboration/components/EntityCollaborationPanel'
+import type { CollaborationBusinessEvent } from '../../collaboration/schemas/collaborationSchemas'
 import { userListOptions } from '../../users/queries/userQueries'
-import { UserAvatar } from '../../users/components/UserAvatar'
 import { workflowDetailOptions } from '../../workflows/queries/workflowQueries'
 import {
   approvalDecisionFormSchema,
@@ -150,6 +150,25 @@ export function ApprovalDetail() {
   )
   const mutationError =
     decideApproval.error ?? delegateApproval.error ?? escalateApproval.error
+  const businessEvents: CollaborationBusinessEvent[] = approval.events.map(
+    (event) => ({
+      actorUserId: event.actorUserId,
+      createdAt: event.createdAt,
+      id: event.id,
+      summary:
+        event.type === 'decision'
+          ? event.comment
+          : event.type === 'delegated' || event.type === 'escalated'
+            ? `${
+                userById.get(event.fromUserId)?.firstName ??
+                'Previous reviewer'
+              } → ${
+                userById.get(event.toUserId)?.firstName ?? 'New reviewer'
+              }`
+            : event.summary,
+      title: eventTitle(event),
+    }),
+  )
 
   const submitDecision = handleSubmit(async (values) => {
     try {
@@ -297,52 +316,11 @@ export function ApprovalDetail() {
             </ol>
           </Card>
 
-          <Card className="overflow-hidden">
-            <div className="border-b border-slate-200 p-5 dark:border-slate-800">
-              <h2 className="flex items-center gap-2 font-semibold">
-                <History aria-hidden="true" className="size-5 text-brand-600" />
-                Approval history
-              </h2>
-            </div>
-            <ol className="space-y-5 p-5">
-              {[...approval.events].reverse().map((event) => {
-                const actor = userById.get(event.actorUserId)
-                return (
-                  <li className="flex gap-3" key={event.id}>
-                    {actor ? (
-                      <UserAvatar className="size-9" user={actor} />
-                    ) : (
-                      <span className="size-9 rounded-full bg-slate-200" />
-                    )}
-                    <div>
-                      <p className="text-sm font-semibold">{eventTitle(event)}</p>
-                      <p className="mt-0.5 text-xs text-slate-400">
-                        {actor
-                          ? `${actor.firstName} ${actor.lastName}`
-                          : 'Unknown actor'}{' '}
-                        · {new Date(event.createdAt).toLocaleString()}
-                      </p>
-                      {event.type === 'decision' ? (
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                          {event.comment}
-                        </p>
-                      ) : null}
-                      {event.type === 'delegated' ||
-                      event.type === 'escalated' ? (
-                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                          {userById.get(event.fromUserId)?.firstName ??
-                            'Previous reviewer'}{' '}
-                          →{' '}
-                          {userById.get(event.toUserId)?.firstName ??
-                            'New reviewer'}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                )
-              })}
-            </ol>
-          </Card>
+          <EntityCollaborationPanel
+            businessEvents={businessEvents}
+            entityId={approval.id}
+            entityType="approval"
+          />
         </div>
 
         <div className="space-y-6">

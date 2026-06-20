@@ -452,6 +452,26 @@ The search feature owns cross-domain document normalization, permission-aware
 index composition, deterministic ranking, result filtering, saved searches,
 recent-query history, and the global keyboard launcher.
 
+Current collaboration domain:
+
+```text
+src/
+  features/
+    collaboration/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    collaborationApi.ts
+```
+
+The collaboration feature owns entity-addressed comments, one-level reply
+threads, managed-user mentions, author and moderator lifecycle rules, and the
+reusable activity panel. Task and approval detail surfaces provide their typed
+business events to the panel, which merges them with persisted collaboration
+events without duplicating source-domain records.
+
 ---
 
 # app/
@@ -1181,6 +1201,12 @@ searches, and per-user preference collections. Search adapters remain
 responsible for mapping source-specific fields into the common document
 vocabulary.
 
+Collaboration schemas validate supported entity types, actor attribution,
+parent relationships, comment lifecycle timestamps, mention identities, and
+form limits. The collaboration service enforces active-user mentions,
+top-level-only reply targets, view and contribution capabilities, and
+author-or-moderator mutation rules before persistence.
+
 ---
 
 # Organization Relationships
@@ -1313,6 +1339,11 @@ when an analytics snapshot is requested.
 The always-mounted search launcher contains only navigation and keyboard
 handling. The search route and service load lazily, and the service dynamically
 imports only authorized source domains while building a query index.
+
+The reusable collaboration panel is included only in lazy task and approval
+detail chunks. Notification reconciliation dynamically imports collaboration
+records with its other event sources, so the application shell does not load
+discussion persistence or mutation logic.
 
 ---
 

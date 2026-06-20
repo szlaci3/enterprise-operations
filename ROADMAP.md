@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M14 — Collaboration
+Active Milestone: M15 — Document Management
 
 Objective:
 
-Establish contextual team collaboration with comments, mentions, discussions,
-and entity-centered activity streams.
+Establish controlled document handling with attachments, metadata, version
+history, and links to operational records.
 
 Success Criteria:
 
-* Comments are durable actor-attributed domain entities
-* Mentions notify managed users and retain entity context
-* Discussions attach to operational records without duplicating them
-* Activity streams combine collaboration and business events
-* Collaboration permissions and lifecycle rules are explicit
+* Documents have durable ownership, classification, and lifecycle metadata
+* New versions preserve immutable prior content and attribution
+* Operational records link to documents without embedding document data
+* Attachment validation and storage constraints are explicit
+* Document access follows typed platform permissions
 
 Previous Phase:
 
@@ -438,7 +438,7 @@ Delivered:
 
 ## M14 — Collaboration
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -451,11 +451,24 @@ Deliverables:
 
 * Team collaboration capabilities
 
+Delivered:
+
+* Durable actor-attributed comments attached to tasks and approvals
+* Top-level comments and one-level replies forming contextual discussions
+* Active managed-user mention selection with recipient validation
+* In-app mention notifications retaining canonical entity links
+* Unified activity timelines combining business lifecycle events and comments
+* Author-or-moderator edit and soft-delete lifecycle rules
+* Explicit view, contribute, and moderate collaboration permissions
+* One-time permission and notification-preference migrations
+* Reusable validated collaboration schemas, query hooks, service, and mock API
+* Seeded realistic discussions demonstrating mentions and replies
+
 ---
 
 ## M15 — Document Management
 
-Status: Planned
+Status: Next
 
 Features:
 

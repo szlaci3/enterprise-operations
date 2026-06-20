@@ -10,6 +10,8 @@ import { browserStorage } from '../services/persistence/browserStorage'
 
 const rolesStorageKey = 'enterprise-operations-roles'
 const assignmentsStorageKey = 'enterprise-operations-role-assignments'
+const collaborationPermissionMigrationKey =
+  'enterprise-operations-collaboration-permissions-v1'
 
 const permissionCatalog: Permission[] = [
   {
@@ -114,6 +116,24 @@ const permissionCatalog: Permission[] = [
     key: 'audit.view',
     module: 'Audit',
   },
+  {
+    action: 'View',
+    description: 'View entity discussions and combined activity streams.',
+    key: 'collaboration.view',
+    module: 'Collaboration',
+  },
+  {
+    action: 'Contribute',
+    description: 'Create, reply to, and edit owned collaboration comments.',
+    key: 'collaboration.contribute',
+    module: 'Collaboration',
+  },
+  {
+    action: 'Moderate',
+    description: 'Edit or remove collaboration comments from any contributor.',
+    key: 'collaboration.moderate',
+    module: 'Collaboration',
+  },
 ]
 
 const allPermissionKeys = permissionCatalog.map((permission) => permission.key)
@@ -148,6 +168,8 @@ const seedRoles: Role[] = [
       'workflows.view',
       'tasks.view',
       'tasks.manage',
+      'collaboration.view',
+      'collaboration.contribute',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -166,6 +188,8 @@ const seedRoles: Role[] = [
       'reports.export',
       'approvals.review',
       'tasks.view',
+      'collaboration.view',
+      'collaboration.contribute',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -181,6 +205,7 @@ const seedRoles: Role[] = [
       'departments.view',
       'users.view',
       'reports.view',
+      'collaboration.view',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -225,7 +250,7 @@ const delay = (milliseconds: number) =>
 function readRoles(): Role[] {
   const persisted = rolesSchema.safeParse(browserStorage.read(rolesStorageKey))
   if (persisted.success) {
-    const synchronized = persisted.data.map((role) => {
+    let synchronized = persisted.data.map((role) => {
       const systemRole = seedRoles.find(
         (seedRole) => seedRole.id === role.id && seedRole.isSystem,
       )
@@ -238,6 +263,22 @@ function readRoles(): Role[] {
           }
         : role
     })
+    if (browserStorage.read(collaborationPermissionMigrationKey) !== true) {
+      synchronized = synchronized.map((role) => {
+        const seedRole = seedRoles.find((seed) => seed.id === role.id)
+        const collaborationKeys =
+          seedRole?.permissionKeys.filter((key) =>
+            key.startsWith('collaboration.'),
+          ) ?? []
+        return {
+          ...role,
+          permissionKeys: [
+            ...new Set([...role.permissionKeys, ...collaborationKeys]),
+          ],
+        }
+      })
+      browserStorage.write(collaborationPermissionMigrationKey, true)
+    }
     browserStorage.write(rolesStorageKey, synchronized)
     return synchronized
   }

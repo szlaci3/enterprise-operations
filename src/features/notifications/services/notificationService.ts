@@ -30,7 +30,7 @@ interface NotificationEmission {
   sourceEventKey: string
   subscription: NotificationSubscription
   title: string
-  category: 'approval' | 'task'
+  category: 'approval' | 'collaboration' | 'task'
 }
 
 function preferenceFor(
@@ -53,12 +53,18 @@ function shouldDeliver(
 }
 
 async function deriveEmissions(): Promise<NotificationEmission[]> {
-  const [{ approvalService }, { taskService }] = await Promise.all([
+  const [
+    { approvalService },
+    { collaborationService },
+    { taskService },
+  ] = await Promise.all([
     import('../../approvals/services/approvalService'),
+    import('../../collaboration/services/collaborationService'),
     import('../../tasks/services/taskService'),
   ])
-  const [approvals, tasks] = await Promise.all([
+  const [approvals, comments, tasks] = await Promise.all([
     approvalService.list(),
+    collaborationService.listAll(),
     taskService.list(),
   ])
   const emissions: NotificationEmission[] = []
@@ -205,6 +211,30 @@ async function deriveEmissions(): Promise<NotificationEmission[]> {
           title: 'Task status changed',
         })
       }
+    }
+  }
+
+  for (const comment of comments) {
+    if (comment.deletedAt) continue
+    for (const mentionedUserId of comment.mentionUserIds) {
+      emissions.push({
+        actionUrl:
+          comment.entityType === 'approval'
+            ? `/approvals/${comment.entityId}`
+            : `/tasks/${comment.entityId}`,
+        category: 'collaboration',
+        createdAt: comment.createdAt,
+        message:
+          comment.body.length > 120
+            ? `${comment.body.slice(0, 117)}...`
+            : comment.body,
+        recipientUserId: mentionedUserId,
+        severity: 'info',
+        sourceEntityId: comment.entityId,
+        sourceEventKey: `collaboration:${comment.id}:mention:${mentionedUserId}`,
+        subscription: 'collaboration-mention',
+        title: 'You were mentioned',
+      })
     }
   }
 

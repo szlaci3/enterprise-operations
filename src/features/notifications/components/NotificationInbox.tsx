@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
+  MessageCircle,
   ShieldAlert,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -30,6 +31,8 @@ function NotificationIcon({ notification }: { notification: Notification }) {
   const Icon =
     notification.category === 'approval'
       ? ShieldAlert
+      : notification.category === 'collaboration'
+        ? MessageCircle
       : notification.category === 'task'
         ? ClipboardCheck
         : Bell
@@ -113,12 +116,24 @@ export function NotificationInbox() {
             Mark all read
           </Button>
         }
-        description="Review actionable activity from approvals and operational work, with read state synchronized across the workspace."
+        description="Review actionable activity from approvals, operational work, and team mentions, with read state synchronized across the workspace."
         eyebrow="Communication"
         title="Notifications"
       />
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-5">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Mentions
+          </p>
+          <p className="mt-2 text-2xl font-semibold">
+            {
+              notifications.filter(
+                (notification) => notification.category === 'collaboration',
+              ).length
+            }
+          </p>
+        </Card>
         <Card className="p-5">
           <p className="text-sm text-slate-500 dark:text-slate-400">Unread</p>
           <p className="mt-2 text-2xl font-semibold">{unreadCount}</p>
@@ -175,6 +190,7 @@ export function NotificationInbox() {
               if (
                 value === 'all' ||
                 value === 'approval' ||
+                value === 'collaboration' ||
                 value === 'task' ||
                 value === 'system'
               ) {
@@ -185,6 +201,7 @@ export function NotificationInbox() {
           >
             <option value="all">All categories</option>
             <option value="approval">Approvals</option>
+            <option value="collaboration">Collaboration</option>
             <option value="task">Tasks</option>
             <option value="system">System</option>
           </select>

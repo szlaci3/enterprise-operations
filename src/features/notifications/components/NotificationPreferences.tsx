@@ -42,6 +42,11 @@ const subscriptionOptions: {
     value: 'approval-escalated',
   },
   {
+    description: 'A teammate mentions you in an entity discussion.',
+    label: 'Collaboration mentions',
+    value: 'collaboration-mention',
+  },
+  {
     description: 'Operational work is assigned or reassigned to you.',
     label: 'Task assignments',
     value: 'task-assigned',
@@ -74,6 +79,7 @@ export function NotificationPreferences() {
         'approval-decision': true,
         'approval-delegated': true,
         'approval-escalated': true,
+        'collaboration-mention': true,
         'task-assigned': true,
         'task-status': true,
       },
