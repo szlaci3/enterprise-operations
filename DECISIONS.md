@@ -671,6 +671,92 @@ These trade-offs are accepted for reliability and long-term domain scalability.
 
 ---
 
+# ADR-010
+
+## Title
+
+Service-Enforced Entity Integrity
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Department management introduces the first persisted CRUD workflow and the
+first domain with relationships between records. Field schemas alone cannot
+enforce collection-level requirements such as unique codes, unique names,
+acyclic parent relationships, or safe deletion.
+
+The same workflow must remain valid whether changes originate from the current
+form, future bulk operations, or a real backend adapter.
+
+---
+
+### Decision
+
+Entity forms use shared Zod schemas for field-level validation. Feature
+services validate the same input again, normalize it, load the current
+collection, and enforce cross-record business rules before invoking a write on
+the mock API.
+
+Department hierarchy is represented with a nullable `parentDepartmentId`.
+Services reject self-parenting, descendant-parent cycles, references to missing
+parents, and deletion while child departments still reference the record.
+
+The mock API is responsible only for latency-shaped collection persistence.
+TanStack Query owns cached collection and detail state, with mutation hooks
+responsible for seeding, invalidating, or removing relevant cache entries.
+
+---
+
+### Alternatives Considered
+
+#### Enforce Rules Only in the Form
+
+Rejected because non-form callers could bypass integrity checks and UI state can
+be stale relative to persisted state.
+
+#### Store Nested Department Trees
+
+Rejected because moving a subtree would require rewriting nested records and
+entity lookup would become more difficult. Parent identifiers provide a
+normalized model suitable for a future relational backend.
+
+#### Cascade Delete Child Departments
+
+Rejected because implicit deletion is unsafe for enterprise organization data.
+Children must be deliberately reassigned or removed first.
+
+#### Put Business Rules in the Mock API
+
+Rejected because replacing the mock transport would also remove domain
+behavior. The feature service is the stable business boundary.
+
+---
+
+### Consequences
+
+Positive:
+
+* one reusable pattern for future entity-management domains
+* integrity rules apply to every feature caller
+* normalized hierarchy maps cleanly to future backend storage
+* query cache behavior is explicit after every mutation
+
+Negative:
+
+* writes require a current collection read in the frontend simulation
+* client-side checks cannot provide true multi-user transaction guarantees
+* services carry more responsibility than simple transport wrappers
+
+These limitations are acceptable until a backend provides transactional
+enforcement.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

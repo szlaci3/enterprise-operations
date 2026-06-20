@@ -212,6 +212,28 @@ src/
 dashboard feature. Dashboard business types, query definitions, formatting,
 and widgets remain owned by the dashboard domain.
 
+Current department domain:
+
+```text
+src/
+  features/
+    departments/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    departmentsApi.ts
+  pages/
+    DepartmentsPage.tsx
+    DepartmentDetailPage.tsx
+    DepartmentEditorPage.tsx
+```
+
+The department feature is the reference implementation for entity management.
+Route pages remain thin, forms and business behavior stay inside the feature,
+and the mock API owns durable collection reads and writes.
+
 ---
 
 # app/
@@ -461,6 +483,23 @@ The browser router is configured centrally in `app/router/router.tsx`.
 an outlet. Unknown routes receive a dedicated not-found experience, while
 route failures use the same recovery surface.
 
+Department management adds:
+
+```text
+/departments
+/departments/new
+/departments/:departmentId
+/departments/:departmentId/edit
+```
+
+Static routes are declared alongside entity routes and React Router performs
+route ranking. Successful create and edit operations navigate to the canonical
+detail route; successful deletion returns to the collection.
+
+The dashboard and department route modules use React Router lazy route loading.
+Domain code is fetched when its route is visited, keeping the application shell
+and unrelated platform areas out of the feature bundle.
+
 ---
 
 # Data Layer
@@ -505,6 +544,14 @@ Query keys are defined by the owning feature. Reporting-period changes create
 separate cache entries, while alert mutations invalidate the dashboard key
 family so all active period snapshots remain consistent.
 
+Department mutations follow the same feature-owned query pattern:
+
+* collection and detail keys share a `departments` root
+* successful writes seed the detail cache and invalidate the domain key family
+* successful deletion removes the deleted detail cache before invalidation
+* services enforce uniqueness, hierarchy integrity, and deletion rules before
+  the mock API changes persistent state
+
 ---
 
 # Persistence Strategy
@@ -538,6 +585,10 @@ storage is unavailable, and exposes data as `unknown` so callers must validate
 persisted values before use. The dashboard currently persists only
 acknowledged alert identifiers.
 
+The department mock API persists the complete validated collection under a
+domain-specific storage key. Missing or invalid stored collections are replaced
+with realistic seed data at the mock boundary.
+
 ---
 
 # Validation Strategy
@@ -553,6 +604,15 @@ schema
 ```
 
 Avoid duplicate validation logic.
+
+Department forms use the same `departmentFormSchema` through React Hook Form's
+Zod resolver and the department service. The service then normalizes fields
+such as department codes and parent identifiers before applying cross-record
+business rules.
+
+Field validation remains schema-driven. Cross-entity constraints—duplicate
+names, duplicate codes, circular reporting lines, and deletion with children—
+remain service responsibilities because they require collection context.
 
 ---
 
@@ -648,6 +708,9 @@ Optimization work should follow measurable need.
 The operational dashboard uses lightweight SVG charts rather than introducing
 a charting dependency for its initial KPI and workload visualizations. Every
 chart has a textual or tabular equivalent for accessibility.
+
+Route-level code splitting is active for the dashboard and department domains.
+New substantial domains should use the same router `lazy` pattern.
 
 ---
 

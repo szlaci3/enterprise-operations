@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M3 — Department Management
+Active Milestone: M4 — User Management
 
 Objective:
 
-Establish the organization model and reusable entity-management patterns that
-future workflows, permissions, and reporting capabilities will build upon.
+Extend the organization model with managed identities, team membership, and
+the user lifecycle needed for assignments and future authorization.
 
 Success Criteria:
 
-* Department domain model is explicit and validated
-* Department list and detail routes are functional
-* Create and edit workflows use shared form patterns
-* Ownership relationships are represented
-* Changes persist through the abstracted data layer
+* User directory and profile routes are functional
+* User lifecycle states are explicit and validated
+* Users can be assigned to departments and teams
+* Identity changes persist through the abstracted data layer
+* Existing department ownership can evolve toward user references
 
 Previous Phase:
 
@@ -105,7 +105,7 @@ Delivered:
 
 ## M3 — Department Management
 
-Status: Next
+Status: Completed (June 20, 2026)
 
 Features:
 
@@ -120,11 +120,21 @@ Deliverables:
 * First complete CRUD workflow
 * Shared entity management patterns
 
+Delivered:
+
+* Searchable and filterable department directory
+* Department detail views with ownership, metadata, and reporting units
+* React Hook Form and Zod create/edit workflows
+* Persisted department repository with seeded enterprise data
+* Unique name/code and circular hierarchy safeguards
+* Guarded deletion that protects parent departments
+* Query cache synchronization across list and detail routes
+
 ---
 
 ## M4 — User Management
 
-Status: Planned
+Status: Next
 
 Features:
 

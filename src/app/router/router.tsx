@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
 import { ModuleOverviewPage } from '../../pages/ModuleOverviewPage'
-import { OverviewPage } from '../../pages/OverviewPage'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
 import { SettingsPage } from '../../pages/SettingsPage'
 
@@ -17,11 +16,50 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'overview',
-        element: <OverviewPage />,
+        lazy: async () => {
+          const { OverviewPage } = await import('../../pages/OverviewPage')
+          return { Component: OverviewPage }
+        },
       },
       {
         path: 'operations',
         element: <ModuleOverviewPage module="operations" />,
+      },
+      {
+        path: 'departments',
+        lazy: async () => {
+          const { DepartmentsPage } = await import(
+            '../../pages/DepartmentsPage'
+          )
+          return { Component: DepartmentsPage }
+        },
+      },
+      {
+        path: 'departments/new',
+        lazy: async () => {
+          const { CreateDepartmentPage } = await import(
+            '../../pages/DepartmentEditorPage'
+          )
+          return { Component: CreateDepartmentPage }
+        },
+      },
+      {
+        path: 'departments/:departmentId',
+        lazy: async () => {
+          const { DepartmentDetailPage } = await import(
+            '../../pages/DepartmentDetailPage'
+          )
+          return { Component: DepartmentDetailPage }
+        },
+      },
+      {
+        path: 'departments/:departmentId/edit',
+        lazy: async () => {
+          const { EditDepartmentPage } = await import(
+            '../../pages/DepartmentEditorPage'
+          )
+          return { Component: EditDepartmentPage }
+        },
       },
       {
         path: 'approvals',

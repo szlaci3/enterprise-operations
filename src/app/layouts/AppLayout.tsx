@@ -4,6 +4,7 @@ import {
   CheckSquare2,
   ClipboardList,
   LayoutDashboard,
+  Network,
   Menu,
   Settings,
   ShieldCheck,
@@ -29,6 +30,7 @@ const primaryNavigation: NavigationItem[] = [
 ]
 
 const secondaryNavigation: NavigationItem[] = [
+  { icon: Network, label: 'Departments', to: '/departments' },
   { icon: ShieldCheck, label: 'Administration', to: '/administration' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ]
