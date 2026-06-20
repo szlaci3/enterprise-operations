@@ -1225,6 +1225,109 @@ These trade-offs are accepted for a coherent operational work foundation.
 
 ---
 
+# ADR-016
+
+## Title
+
+Checkpointed Notification Projection from Domain Event History
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Approvals and tasks already preserve typed, append-only activity events.
+Notifications need to react to that activity without embedding communication
+concerns inside every business mutation or making notification delivery part
+of the transaction that changes the business entity.
+
+User preferences must apply to future activity, and toggling a subscription
+must not cause old suppressed events to appear later.
+
+---
+
+### Decision
+
+Build notifications as a persisted projection over approval and task event
+history.
+
+The notification service derives typed emissions with stable source event
+keys. It loads recipient preferences, verifies that the recipient is an active
+managed identity, creates an in-app notification when subscribed, and records
+the source event key as processed.
+
+Every observed event is checkpointed whether it is delivered or suppressed.
+Preferences therefore govern processing-time delivery and never replay
+historical activity after being re-enabled.
+
+Persist notification records and processed event keys together as one
+projection store. Persist user preferences separately. Read state belongs to
+the notification record and is synchronized through the notification query
+family.
+
+Domain services do not call notification services directly. Projection occurs
+when notification queries synchronize and at a modest polling interval while
+the header indicator is active.
+
+Because the header bell is part of the application shell, notification
+persistence and source-domain services are loaded through dynamic imports.
+
+---
+
+### Alternatives Considered
+
+#### Call Notification APIs from Every Domain Mutation
+
+Rejected because notification failures would become coupled to business
+transactions and every domain would gain a communication dependency.
+
+#### Derive Notifications Without Persistence
+
+Rejected because read state, delivery preference decisions, and stable message
+identity would be lost on every refresh.
+
+#### Re-Evaluate All Historical Events on Every Preference Change
+
+Rejected because enabling a subscription could unexpectedly deliver stale
+activity. Processed checkpoints give preferences forward-only semantics.
+
+#### Poll Each Source Domain Independently in the Header
+
+Rejected because the shell would own cross-domain rules and duplicate
+projection logic.
+
+#### Eagerly Import the Projector into the Application Shell
+
+Rejected because it would pull persistence, task, approval, and user code into
+the initial bundle.
+
+---
+
+### Consequences
+
+Positive:
+
+* business domains remain independent from notification delivery
+* typed source events produce deterministic actionable messages
+* duplicate delivery and historical replay are prevented
+* read state and preferences persist independently
+* the model maps naturally to a future event consumer or background worker
+* shell bundle ownership remains controlled
+
+Negative:
+
+* notifications are eventually consistent rather than transactionally instant
+* projection currently scans frontend event history
+* suppressed events cannot be recovered through later preference changes
+* external email delivery is represented only as preference metadata
+
+These trade-offs are accepted for a decoupled communication foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

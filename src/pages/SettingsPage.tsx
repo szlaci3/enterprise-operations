@@ -1,6 +1,7 @@
 import { Laptop, Moon, Sun } from 'lucide-react'
 import { Card } from '../shared/components/Card'
 import { PageHeader } from '../shared/components/PageHeader'
+import { NotificationPreferences } from '../features/notifications/components/NotificationPreferences'
 import {
   useUiStore,
   type ThemePreference,
@@ -94,6 +95,8 @@ export function SettingsPage() {
           </div>
         </fieldset>
       </Card>
+
+      <NotificationPreferences />
     </div>
   )
 }

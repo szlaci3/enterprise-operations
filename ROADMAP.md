@@ -16,20 +16,21 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M9 — Notifications Center
+Active Milestone: M10 — Audit Logging
 
 Objective:
 
-Establish a cross-platform notification inbox with event-driven messages,
-read state, preferences, and subscriptions to operational activity.
+Establish enterprise traceability through normalized entity history,
+cross-domain change records, actor attribution, and an administrative audit
+viewer.
 
 Success Criteria:
 
-* Notifications are explicit persisted entities addressed to managed users
-* Domain events can produce actionable notifications
-* Read and unread state is synchronized across notification surfaces
-* Users can manage event and delivery preferences
-* Notifications link back to the originating business record
+* Audit records are immutable, typed, and actor-attributed
+* Critical domain mutations emit normalized audit entries
+* Entity history can be inspected from business detail views
+* Administrators can search and filter cross-domain changes
+* Audit persistence can migrate to a backend append-only store
 
 Previous Phase:
 
@@ -283,7 +284,7 @@ Delivered:
 
 ## M9 — Notifications Center
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -296,11 +297,25 @@ Deliverables:
 
 * Cross-platform communication layer
 
+Delivered:
+
+* Persisted user-addressed notifications with actionable entity links
+* Event projection from append-only approval and task activity
+* Processed-event checkpoints that prevent duplicate or resurrected messages
+* Approval assignment, decision, delegation, and escalation subscriptions
+* Task assignment, reassignment, and lifecycle subscriptions
+* Read, unread, and mark-all-read synchronization
+* Header notification indicator with polling for new domain activity
+* Filterable notification inbox with severity and category presentation
+* In-app enablement, event subscriptions, and simulated digest preferences
+* Processing-time preference evaluation for future event delivery
+* Lazy notification reconciliation and route loading to protect shell bundles
+
 ---
 
 ## M10 — Audit Logging
 
-Status: Planned
+Status: Next
 
 Features:
 

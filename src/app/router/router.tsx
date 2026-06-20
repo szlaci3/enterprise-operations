@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
 import { ModuleOverviewPage } from '../../pages/ModuleOverviewPage'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
-import { SettingsPage } from '../../pages/SettingsPage'
 
 export const appRouter = createBrowserRouter([
   {
@@ -307,12 +306,24 @@ export const appRouter = createBrowserRouter([
         element: <ModuleOverviewPage module="reports" />,
       },
       {
+        path: 'notifications',
+        lazy: async () => {
+          const { NotificationsPage } = await import(
+            '../../pages/NotificationsPage'
+          )
+          return { Component: NotificationsPage }
+        },
+      },
+      {
         path: 'administration',
         element: <ModuleOverviewPage module="administration" />,
       },
       {
         path: 'settings',
-        element: <SettingsPage />,
+        lazy: async () => {
+          const { SettingsPage } = await import('../../pages/SettingsPage')
+          return { Component: SettingsPage }
+        },
       },
       {
         path: '*',

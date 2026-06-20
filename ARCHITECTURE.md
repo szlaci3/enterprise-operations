@@ -350,6 +350,27 @@ lifecycle transitions, approval relationships, triage queues, and append-only
 task activity. Tasks are retained after completion or cancellation rather than
 deleted so operational history remains navigable.
 
+Current notification domain:
+
+```text
+src/
+  features/
+    notifications/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    notificationsApi.ts
+  pages/
+    NotificationsPage.tsx
+```
+
+The notification feature owns recipient-addressed messages, read state,
+subscription preferences, and projection checkpoints. It consumes typed,
+append-only approval and task events through service boundaries rather than
+being called directly from domain mutations.
+
 ---
 
 # app/
@@ -673,7 +694,18 @@ The task route tree requires `tasks.view`. Create and edit pages use
 `PermissionGate`. `/operations` redirects to the task queue for backward
 compatibility with the original shell route.
 
-The dashboard, department, user, access, workflow, approval, and task route modules use React Router lazy route loading.
+Notification management adds:
+
+```text
+/notifications
+```
+
+The notification center is personal to the current simulated session. A global
+header bell links to the inbox and displays unread count. Notification
+preferences are composed into `/settings`.
+
+The dashboard, department, user, access, workflow, approval, task,
+notification, and settings route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -774,6 +806,28 @@ Personal, department, list, and board queues are derived views over the same
 cached collection. TanStack Query remains the source of server-like task data;
 queue filters and view mode remain local UI state.
 
+Notifications use a projection model:
+
+```text
+Approval and task events
+        ↓
+Notification projector
+        ↓
+Preference evaluation + event checkpoint
+        ↓
+Persisted recipient notification
+```
+
+The projector derives emissions from domain event history, de-duplicates them
+with stable source event keys, checks active identity and subscription
+preferences, and persists resulting notifications. Every event is checkpointed
+whether delivered or suppressed, so later preference changes do not replay old
+activity.
+
+Notification queries poll at a modest interval while active. Read mutations
+invalidate or update the current user's notification cache so the header badge
+and inbox remain synchronized.
+
 ---
 
 # Persistence Strategy
@@ -832,6 +886,11 @@ The task mock API persists task aggregates under a domain-specific key. Missing
 or invalid collections are replaced with realistic seeded work. Completed and
 cancelled tasks remain in storage to preserve operational history.
 
+The notification mock API persists a projection store containing notifications
+and processed source-event keys. User preferences are persisted separately so
+delivery policy can evolve without rewriting notification history. Email
+digests are preference metadata only; external delivery remains simulated.
+
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
 reach system administrators without overwriting editable custom roles.
@@ -889,6 +948,11 @@ departments, valid approval references, active actors, and an explicit
 transition map. Completed tasks may be reopened to in-progress; cancelled work
 may return to backlog; blocked work must return to in-progress before
 completion.
+
+Notification schemas validate categories, severity, subscription types,
+recipient identity, action links, read timestamps, preferences, and projection
+checkpoints. The notification service validates all persisted resources and
+only delivers events to active managed identities.
 
 ---
 
@@ -999,6 +1063,13 @@ chart has a textual or tabular equivalent for accessibility.
 
 Route-level code splitting is active for the dashboard and department domains.
 New substantial domains should use the same router `lazy` pattern.
+
+The always-mounted header bell statically imports only its lightweight
+component and query definitions. Notification persistence and cross-domain
+projection services are dynamically imported when queries execute. Source
+approval, task, and user services remain behind additional dynamic boundaries,
+preventing notification reconciliation from pulling those domains into the
+application shell bundle.
 
 ---
 
