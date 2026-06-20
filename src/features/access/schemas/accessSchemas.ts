@@ -15,6 +15,7 @@ export const permissionKeySchema = z.enum([
   'approvals.review',
   'tasks.view',
   'tasks.manage',
+  'audit.view',
 ])
 
 export const permissionSchema = z.object({
@@ -29,6 +30,7 @@ export const permissionSchema = z.object({
     'Workflows',
     'Approvals',
     'Tasks',
+    'Audit',
   ]),
 })
 

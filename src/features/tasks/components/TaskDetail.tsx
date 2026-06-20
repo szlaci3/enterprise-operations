@@ -19,6 +19,7 @@ import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
 import { PermissionGate } from '../../access/components/PermissionGate'
 import { approvalDetailOptions } from '../../approvals/queries/approvalQueries'
+import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
 import { departmentDetailOptions } from '../../departments/queries/departmentQueries'
 import { UserAvatar } from '../../users/components/UserAvatar'
 import { userListOptions } from '../../users/queries/userQueries'
@@ -267,6 +268,8 @@ export function TaskDetail() {
         </Card>
 
         <div className="space-y-6">
+          <EntityAuditPanel entityId={task.id} entityType="task" />
+
           {options.length > 0 ? (
             <PermissionGate permission="tasks.manage">
               <Card className="p-5">

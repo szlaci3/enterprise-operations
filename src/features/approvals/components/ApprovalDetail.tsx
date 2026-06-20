@@ -20,6 +20,7 @@ import { currentSessionUserId } from '../../../app/session/currentSession'
 import { Button } from '../../../shared/components/Button'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
+import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
 import { userListOptions } from '../../users/queries/userQueries'
 import { UserAvatar } from '../../users/components/UserAvatar'
 import { workflowDetailOptions } from '../../workflows/queries/workflowQueries'
@@ -345,6 +346,8 @@ export function ApprovalDetail() {
         </div>
 
         <div className="space-y-6">
+          <EntityAuditPanel entityId={approval.id} entityType="approval" />
+
           {canAct ? (
             <Card className="p-5">
               <h2 className="font-semibold">Record your decision</h2>

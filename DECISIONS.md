@@ -1328,6 +1328,113 @@ These trade-offs are accepted for a decoupled communication foundation.
 
 ---
 
+# ADR-017
+
+## Title
+
+Normalized Append-Only Audit Projection over Authoritative Domain Events
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Approval and task aggregates preserve rich typed event histories, but those
+events use domain-specific contracts. Enterprise traceability needs a common
+record model that can be searched across domains, displayed consistently, and
+migrated to a future centralized audit store.
+
+Adding audit writes directly to every mutation would couple business
+transactions to a secondary persistence concern and risk disagreement between
+entity history and audit history.
+
+---
+
+### Decision
+
+Build audit logging as a normalized projection over authoritative append-only
+domain events.
+
+Each supported source event maps to one immutable audit record containing:
+
+* stable source event key
+* entity type, identifier, and display name
+* actor user identifier
+* normalized action
+* timestamp and human-readable summary
+* structured field changes with before and after values
+
+Persist records with processed event keys. Synchronization appends records only
+for unseen keys. The audit service exposes no update or delete operation.
+
+The initial projector covers approval and task domains because they already
+provide actor-attributed event streams. Additional domains should join audit
+projection when they expose equally trustworthy mutation histories.
+
+Global and entity-level views use the same projection store. Access requires
+the code-owned `audit.view` permission.
+
+Audit projection services are dynamically imported from query definitions to
+preserve route and shell bundle boundaries.
+
+---
+
+### Alternatives Considered
+
+#### Write Audit Records Inside Every Mutation
+
+Rejected because audit persistence failure could affect business operations,
+domains would gain an infrastructure dependency, and duplicate write paths
+could drift.
+
+#### Display Raw Domain Events Directly
+
+Rejected because cross-domain search, action filtering, structured changes,
+and future backend storage require a stable common contract.
+
+#### Audit Snapshot `updatedAt` Values
+
+Rejected because timestamps alone do not identify the actor, reason, or actual
+field transition and can create misleading records.
+
+#### Permit Audit Record Correction or Deletion
+
+Rejected because mutable audit history undermines traceability. Corrections
+should eventually be represented as additional records.
+
+#### Project Domains Without Actor-Attributed Events
+
+Deferred until those domains expose reliable mutation history. Guessing actors
+would be worse than explicitly limiting coverage.
+
+---
+
+### Consequences
+
+Positive:
+
+* entity history and global audit views share one normalized source
+* audit records retain actor and structured change context
+* duplicate records are prevented with stable checkpoints
+* business mutations remain independent from audit infrastructure
+* the adapter maps naturally to a future append-only backend store
+* coverage can expand incrementally as domains mature
+
+Negative:
+
+* audit records are eventually consistent rather than transactional
+* initial coverage is limited to approval and task domains
+* projection scans frontend domain history in the current simulation
+* source event corrections would require explicit compensating records
+
+These trade-offs are accepted for reliable and extensible enterprise
+traceability.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

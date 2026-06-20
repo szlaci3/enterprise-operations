@@ -96,6 +96,12 @@ const permissionCatalog: Permission[] = [
     key: 'tasks.manage',
     module: 'Tasks',
   },
+  {
+    action: 'View',
+    description: 'Search immutable cross-domain audit records and history.',
+    key: 'audit.view',
+    module: 'Audit',
+  },
 ]
 
 const allPermissionKeys = permissionCatalog.map((permission) => permission.key)

@@ -16,21 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M10 — Audit Logging
+Active Milestone: M11 — Reporting System
 
 Objective:
 
-Establish enterprise traceability through normalized entity history,
-cross-domain change records, actor attribution, and an administrative audit
-viewer.
+Establish a reusable reporting foundation with report definitions, templates,
+saved configurations, controlled execution, and export-ready outputs.
 
 Success Criteria:
 
-* Audit records are immutable, typed, and actor-attributed
-* Critical domain mutations emit normalized audit entries
-* Entity history can be inspected from business detail views
-* Administrators can search and filter cross-domain changes
-* Audit persistence can migrate to a backend append-only store
+* Reports are explicit persisted domain entities
+* Reusable templates accelerate common operational reporting
+* Saved report configurations retain filters and column choices
+* Report execution produces validated tabular results
+* Export workflows respect reporting permissions
 
 Previous Phase:
 
@@ -315,7 +314,7 @@ Delivered:
 
 ## M10 — Audit Logging
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -328,11 +327,24 @@ Deliverables:
 
 * Enterprise traceability
 
+Delivered:
+
+* Normalized immutable audit records projected from approval and task events
+* Stable source-event checkpoints that prevent duplicate audit entries
+* Actor, entity, action, timestamp, summary, and structured change attribution
+* Protected cross-domain audit viewer with search and multi-dimensional filters
+* Actor, entity type, action, and date-range filtering
+* Deep links from audit records to originating business entities
+* Reusable entity audit panels on approval and task detail experiences
+* Polling-based eventual synchronization for newly appended domain events
+* Typed `audit.view` permission and protected administrative route
+* Lazy audit projection services that preserve route-level bundle ownership
+
 ---
 
 ## M11 — Reporting System
 
-Status: Planned
+Status: Next
 
 Features:
 

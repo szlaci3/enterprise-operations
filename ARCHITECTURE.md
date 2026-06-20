@@ -371,6 +371,27 @@ subscription preferences, and projection checkpoints. It consumes typed,
 append-only approval and task events through service boundaries rather than
 being called directly from domain mutations.
 
+Current audit domain:
+
+```text
+src/
+  features/
+    audit/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    auditApi.ts
+  pages/
+    AuditPage.tsx
+```
+
+The audit feature owns normalized immutable records, projection checkpoints,
+the cross-domain administrative viewer, and reusable entity history panels.
+It projects from authoritative approval and task event histories rather than
+intercepting domain writes.
+
 ---
 
 # app/
@@ -704,8 +725,19 @@ The notification center is personal to the current simulated session. A global
 header bell links to the inbox and displays unread count. Notification
 preferences are composed into `/settings`.
 
+Audit management adds:
+
+```text
+/audit
+```
+
+The route requires `audit.view`. `/administration` redirects to the audit
+viewer as the first completed administration capability. Approval and task
+detail pages conditionally render entity audit panels for users with the same
+permission.
+
 The dashboard, department, user, access, workflow, approval, task,
-notification, and settings route modules use React Router lazy route loading.
+notification, audit, and settings route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -828,6 +860,24 @@ Notification queries poll at a modest interval while active. Read mutations
 invalidate or update the current user's notification cache so the header badge
 and inbox remain synchronized.
 
+Audit records use a second projection model over the same source event
+histories:
+
+```text
+Approval and task events
+        ↓
+Audit normalizer
+        ↓
+Stable source-event checkpoint
+        ↓
+Immutable normalized audit record
+```
+
+Unlike notifications, audit projection has no recipient or preference filter.
+Every supported source event produces one normalized record containing actor,
+entity, action, timestamp, summary, and structured field changes. Global and
+entity audit queries read the same projection store.
+
 ---
 
 # Persistence Strategy
@@ -891,6 +941,11 @@ and processed source-event keys. User preferences are persisted separately so
 delivery policy can evolve without rewriting notification history. Email
 digests are preference metadata only; external delivery remains simulated.
 
+The audit mock API persists records and processed source-event keys together.
+The service only appends records for unseen event keys. No audit delete or
+update operation exists. A future backend can replace this adapter with an
+append-only audit table or event consumer.
+
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
 reach system administrators without overwriting editable custom roles.
@@ -953,6 +1008,11 @@ Notification schemas validate categories, severity, subscription types,
 recipient identity, action links, read timestamps, preferences, and projection
 checkpoints. The notification service validates all persisted resources and
 only delivers events to active managed identities.
+
+Audit schemas validate supported entity types and actions, actor attribution,
+source-event identity, timestamps, summaries, and structured before/after
+changes. Source domain schemas remain responsible for event validity; the audit
+normalizer is responsible for the cross-domain record contract.
 
 ---
 
@@ -1070,6 +1130,10 @@ projection services are dynamically imported when queries execute. Source
 approval, task, and user services remain behind additional dynamic boundaries,
 preventing notification reconciliation from pulling those domains into the
 application shell bundle.
+
+Audit query definitions also dynamically import their projection service.
+Entity history panels add only lightweight audit UI and schemas to business
+detail chunks; source services and persistence load when audit queries execute.
 
 ---
 

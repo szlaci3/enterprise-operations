@@ -7,6 +7,7 @@ import {
   Network,
   Menu,
   Settings,
+  ScrollText,
   ShieldCheck,
   ShieldEllipsis,
   UsersRound,
@@ -38,6 +39,7 @@ const secondaryNavigation: NavigationItem[] = [
   { icon: Network, label: 'Departments', to: '/departments' },
   { icon: UsersRound, label: 'Users', to: '/users' },
   { icon: ShieldEllipsis, label: 'Access control', to: '/access' },
+  { icon: ScrollText, label: 'Audit trail', to: '/audit' },
   { icon: ShieldCheck, label: 'Administration', to: '/administration' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ]
