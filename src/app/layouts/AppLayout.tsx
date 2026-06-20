@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   ShieldEllipsis,
   UsersRound,
+  Waypoints,
   type LucideIcon,
   X,
 } from 'lucide-react'
@@ -27,6 +28,7 @@ interface NavigationItem {
 const primaryNavigation: NavigationItem[] = [
   { icon: LayoutDashboard, label: 'Overview', to: '/overview' },
   { icon: ClipboardList, label: 'Operations', to: '/operations' },
+  { icon: Waypoints, label: 'Workflows', to: '/workflows' },
   { icon: CheckSquare2, label: 'Approvals', to: '/approvals' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },
 ]

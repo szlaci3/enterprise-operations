@@ -281,6 +281,29 @@ src/
 The access feature owns the permission catalog, roles, assignments, effective
 access evaluation, and reusable authorization UI boundaries.
 
+Current workflow domain:
+
+```text
+src/
+  features/
+    workflows/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    workflowsApi.ts
+  pages/
+    WorkflowsPage.tsx
+    WorkflowDetailPage.tsx
+    WorkflowEditorPage.tsx
+```
+
+The workflow feature owns versioned process definitions, graph validation,
+templates, lifecycle transitions, and the process designer. Each persisted
+record is one workflow version; records with the same stable `workflowKey`
+form a version history.
+
 ---
 
 # app/
@@ -564,7 +587,20 @@ Access management adds:
 The access route tree is wrapped by `AuthorizationBoundary` and requires
 `security.manage`. Nested role pages inherit the same route authorization.
 
-The dashboard, department, user, and access route modules use React Router lazy route loading.
+Workflow management adds:
+
+```text
+/workflows
+/workflows/new
+/workflows/:workflowId
+/workflows/:workflowId/edit
+```
+
+The workflow route tree requires `workflows.view`. Management actions require
+`workflows.manage`, while service rules independently protect published
+versions from mutation.
+
+The dashboard, department, user, access, and workflow route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -640,6 +676,12 @@ roles and returns the de-duplicated union of their permission keys. Only active
 users receive effective permissions; invited, suspended, and deactivated
 identities evaluate to no access.
 
+Workflow data is persisted as complete version records. Activation replaces
+the collection atomically at the mock boundary so the selected draft becomes
+active and any previous active version with the same workflow key becomes
+retired. New versions clone state and transition identifiers to prevent
+identity sharing between historical graphs.
+
 ---
 
 # Persistence Strategy
@@ -685,6 +727,10 @@ The access mock API persists role definitions and assignment records under
 separate keys. The permission catalog is code-owned because permission keys are
 application capabilities that must remain synchronized with implementation.
 
+The workflow mock API persists the version collection under a domain-specific
+key. Templates remain code-owned because they are curated process-design
+accelerators rather than mutable business records.
+
 ---
 
 # Validation Strategy
@@ -718,6 +764,13 @@ context before persistence.
 Access services validate unique role names, referenced users and roles,
 protected system-role behavior, assigned-role deletion, and continuity of
 security administration before persisting policy changes.
+
+Workflow forms and services share a graph-aware Zod schema. It enforces exactly
+one initial state, unique state keys, valid transition references, no self or
+duplicate edges, no outgoing transitions from terminal states, onward paths
+from every non-terminal state, and reachability from the initial state.
+Lifecycle constraints remain service responsibilities because they depend on
+the current version collection.
 
 ---
 

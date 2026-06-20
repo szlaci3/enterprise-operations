@@ -934,6 +934,95 @@ foundation.
 
 ---
 
+# ADR-013
+
+## Title
+
+Versioned Workflow Graphs with Immutable Published History
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Approvals, tasks, audit history, and reporting will need to reference a stable
+business process even after administrators change that process. Updating one
+workflow record in place would make historical work appear to have followed
+rules that did not exist when it was executed.
+
+Workflow configuration also forms a directed graph, so ordinary field
+validation is insufficient to protect process integrity.
+
+---
+
+### Decision
+
+Persist each workflow version as a complete definition record. Records share a
+stable `workflowKey` and have an increasing version number.
+
+Draft versions are editable and deletable. Active and retired versions are
+read-only. Activating a draft retires the previous active version with the same
+workflow key. Creating a new version clones the graph with fresh state and
+transition identifiers.
+
+The shared workflow schema validates the graph before service writes. It
+requires exactly one initial state, reachable states, valid and unique
+transitions, terminal-state integrity, and an onward path from each
+non-terminal state.
+
+Reusable templates are code-owned starting configurations. They accelerate
+authoring but do not remain linked as mutable inheritance.
+
+---
+
+### Alternatives Considered
+
+#### Update Active Workflows in Place
+
+Rejected because running approvals and historical records would lose the exact
+process definition they were created against.
+
+#### Store Only Differences Between Versions
+
+Rejected because reconstructing a historical graph would require replaying a
+change chain and would complicate future auditing and migration.
+
+#### Validate Graphs Only in the Editor
+
+Rejected because future imports, bulk operations, and backend adapters could
+bypass UI validation.
+
+#### Persist Editable Templates
+
+Deferred because template governance, ownership, and compatibility would add a
+separate lifecycle before a concrete requirement exists.
+
+---
+
+### Consequences
+
+Positive:
+
+* approvals can reference an immutable workflow version
+* published process history remains explainable
+* graph integrity is enforced for every write path
+* activation has a clear and auditable lifecycle
+* templates accelerate creation without coupling definitions to future edits
+
+Negative:
+
+* complete graph copies consume more browser storage
+* correcting a published definition requires a new version
+* atomic activation is simulated at the mock collection boundary and will
+  require a backend transaction later
+
+These trade-offs are accepted to establish a trustworthy process foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

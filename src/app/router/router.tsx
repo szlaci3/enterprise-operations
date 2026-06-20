@@ -143,6 +143,57 @@ export const appRouter = createBrowserRouter([
         ],
       },
       {
+        path: 'workflows',
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="workflows.view" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { WorkflowsPage } = await import(
+                '../../pages/WorkflowsPage'
+              )
+              return { Component: WorkflowsPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { CreateWorkflowPage } = await import(
+                '../../pages/WorkflowEditorPage'
+              )
+              return { Component: CreateWorkflowPage }
+            },
+          },
+          {
+            path: ':workflowId',
+            lazy: async () => {
+              const { WorkflowDetailPage } = await import(
+                '../../pages/WorkflowDetailPage'
+              )
+              return { Component: WorkflowDetailPage }
+            },
+          },
+          {
+            path: ':workflowId/edit',
+            lazy: async () => {
+              const { EditWorkflowPage } = await import(
+                '../../pages/WorkflowEditorPage'
+              )
+              return { Component: EditWorkflowPage }
+            },
+          },
+        ],
+      },
+      {
         path: 'approvals',
         element: <ModuleOverviewPage module="approvals" />,
       },

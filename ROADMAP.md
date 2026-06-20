@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M6 — Workflow Engine
+Active Milestone: M7 — Approval System
 
 Objective:
 
-Establish the business-process model for reusable workflow definitions, states,
-transitions, and templates.
+Execute realistic approval chains against the versioned workflow model,
+including reviewer decisions, escalation, delegation, and history.
 
 Success Criteria:
 
-* Workflow definitions and versions are explicit domain entities
-* States and transitions are validated as a coherent graph
-* Reusable templates accelerate workflow creation
-* Workflow configuration persists through the abstracted data layer
-* Future approvals and tasks can execute against the same process model
+* Approval requests execute against a specific active workflow version
+* Approval steps support assignment, decisions, comments, and timestamps
+* Escalation and delegation rules preserve accountability
+* Approval history is immutable and visible
+* Operational work can consume approval outcomes in later milestones
 
 Previous Phase:
 
@@ -193,7 +193,7 @@ Delivered:
 
 ## M6 — Workflow Engine
 
-Status: Next
+Status: Completed (June 20, 2026)
 
 Features:
 
@@ -206,11 +206,22 @@ Deliverables:
 
 * Core business process framework
 
+Delivered:
+
+* Explicit workflow definitions grouped by stable process keys and versions
+* Draft, active, and retired lifecycle with read-only published history
+* Activation that retires the previous active process version
+* Validated state graphs with initial, terminal, transition, and reachability rules
+* Reusable approval and remediation templates
+* Persisted workflow collection behind a validated mock API and feature service
+* Workflow directory, process graph detail, version history, and draft editor
+* Permission-protected workflow routes and management actions
+
 ---
 
 ## M7 — Approval System
 
-Status: Planned
+Status: Next
 
 Features:
 
