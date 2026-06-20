@@ -414,6 +414,24 @@ The reporting feature owns saved report definitions, code-owned templates,
 source-specific column catalogs, execution adapters, uniform tabular results,
 and CSV serialization.
 
+Current analytics domain:
+
+```text
+src/
+  features/
+    analytics/
+      components/
+      queries/
+      schemas/
+      services/
+  pages/
+    AnalyticsPage.tsx
+```
+
+The analytics feature owns validated metric snapshots, time-window and
+department segmentation, trend aggregation, operational distributions, and
+reusable accessible visualization components.
+
 ---
 
 # app/
@@ -771,8 +789,17 @@ The route tree requires `reports.view`. Create and edit routes require
 `reports.manage`. CSV export is independently exposed only to users with
 `reports.export`.
 
+Analytics adds:
+
+```text
+/analytics
+```
+
+The route requires `analytics.view`. Analytics appears alongside the executive
+overview while remaining a separately loaded domain and permission.
+
 The dashboard, department, user, access, workflow, approval, task,
-notification, audit, reporting, and settings route modules use React Router lazy route loading.
+notification, audit, reporting, analytics, and settings route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -930,6 +957,20 @@ ownership. Executions always read current source services. Task, approval, and
 audit adapters own their source joins and filter semantics, then map into one
 string-valued row contract for presentation and export.
 
+Analytics uses current domain services through a purpose-built aggregation
+adapter. It applies a shared period and optional department segment before
+deriving:
+
+* headline metrics with previous-period comparisons
+* weekly task and approval movement
+* task lifecycle distribution
+* approval outcome distribution
+* open workload by department
+
+Reporting and analytics both read current source services and validate their
+outputs, but use different contracts: reporting produces row-oriented results,
+while analytics produces metric- and series-oriented snapshots.
+
 ---
 
 # Persistence Strategy
@@ -1003,6 +1044,9 @@ ephemeral TanStack Query data because they represent current snapshots rather
 than durable business entities. Templates and source column catalogs remain
 code-owned to match implemented execution capabilities.
 
+Analytics snapshots are not persisted. They are derived current-state data and
+live only in TanStack Query caches keyed by period and department segment.
+
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
 reach system administrators without overwriting editable custom roles.
@@ -1074,6 +1118,10 @@ normalizer is responsible for the cross-domain record contract.
 Report schemas validate sources, allowed column keys, filter shape, persisted
 definitions, templates, and uniform result tables. The report service performs
 source-aware column validation and unique-name enforcement before persistence.
+
+Analytics schemas validate periods, filters, metric formats and trend
+semantics, weekly series, distributions, and complete snapshots before data
+enters the query cache.
 
 ---
 
@@ -1199,6 +1247,10 @@ detail chunks; source services and persistence load when audit queries execute.
 Report routes are lazy-loaded. Execution adapters dynamically import task,
 approval, audit, user, and department services only when a report is run,
 keeping unrelated report sources out of the report library bundle.
+
+Analytics queries dynamically import the aggregation service. The aggregation
+service then dynamically loads task, approval, and department services only
+when an analytics snapshot is requested.
 
 ---
 

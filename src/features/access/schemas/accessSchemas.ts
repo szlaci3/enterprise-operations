@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const permissionKeySchema = z.enum([
   'dashboard.view',
+  'analytics.view',
   'departments.view',
   'departments.manage',
   'users.view',
@@ -25,6 +26,7 @@ export const permissionSchema = z.object({
   key: permissionKeySchema,
   module: z.enum([
     'Dashboard',
+    'Analytics',
     'Organization',
     'Security',
     'Reporting',

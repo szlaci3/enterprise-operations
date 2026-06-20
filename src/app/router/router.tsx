@@ -20,6 +20,30 @@ export const appRouter = createBrowserRouter([
         },
       },
       {
+        path: 'analytics',
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="analytics.view" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { AnalyticsPage } = await import(
+                '../../pages/AnalyticsPage'
+              )
+              return { Component: AnalyticsPage }
+            },
+          },
+        ],
+      },
+      {
         path: 'operations',
         element: <Navigate to="/tasks" replace />,
       },

@@ -1541,6 +1541,110 @@ These trade-offs are accepted for a reliable reporting foundation.
 
 ---
 
+# ADR-019
+
+## Title
+
+Validated Current-State Analytics with Shared Segmentation
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The platform has operational data and a row-oriented reporting engine, but
+executive analysis needs derived metrics, comparable periods, trends, and
+distributions rather than saved tables alone.
+
+Analytics should use the same trustworthy domain sources as reporting without
+persisting duplicate metric snapshots or introducing a chart dependency before
+the interaction requirements justify one.
+
+---
+
+### Decision
+
+Derive analytics snapshots from current task, approval, and department
+services.
+
+Every snapshot applies one shared filter contract:
+
+* reporting period of 30, 90, or 180 days
+* optional department identifier
+
+The aggregation service returns a validated analytics contract containing:
+
+* headline metrics with format and favorable trend semantics
+* previous-period comparisons
+* weekly task-created, task-completed, and approval-decided series
+* task lifecycle, approval outcome, and department workload distributions
+* generation timestamp and applied filters
+
+Do not persist analytics snapshots. TanStack Query caches them by period and
+department segment.
+
+Build lightweight SVG and CSS visualizations with semantic summaries and
+screen-reader tables. Reconsider a charting dependency when richer interaction,
+larger series, or specialized chart types create concrete need.
+
+Use a separate `analytics.view` permission and route. Dynamically load the
+aggregation service and its source domains when an analytics query executes.
+
+---
+
+### Alternatives Considered
+
+#### Reuse Report Results Directly
+
+Rejected because report rows do not encode metric definitions, trend semantics,
+or efficient distribution series. Both systems share sources, not output shape.
+
+#### Persist Analytics Snapshots
+
+Rejected because snapshots would become stale copies requiring refresh,
+retention, and version policy.
+
+#### Introduce a Charting Library Immediately
+
+Deferred because the current line and distribution visuals are small,
+accessible, and maintainable with native SVG and CSS.
+
+#### Use Independent Filters per Widget
+
+Rejected because executives could unknowingly compare widgets using different
+time windows or organization segments.
+
+#### Put Aggregations in React Components
+
+Rejected because computation would be duplicated, difficult to validate, and
+coupled to presentation.
+
+---
+
+### Consequences
+
+Positive:
+
+* one validated snapshot keeps dashboard widgets internally consistent
+* period comparisons have explicit favorable-direction meaning
+* reporting and analytics share authoritative sources without duplicate data
+* visualizations remain accessible and dependency-light
+* new metric and distribution components can be composed into future dashboards
+
+Negative:
+
+* current frontend aggregation scans complete source collections
+* sparse seed data can produce empty periods or flat trends
+* historical state reconstruction is limited to available timestamps and events
+* advanced drill-down, forecasting, and custom metrics are deferred
+
+These trade-offs are accepted for a coherent analytics foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

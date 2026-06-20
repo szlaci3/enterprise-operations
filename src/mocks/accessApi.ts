@@ -20,6 +20,12 @@ const permissionCatalog: Permission[] = [
   },
   {
     action: 'View',
+    description: 'Explore operational metrics, trends, and distributions.',
+    key: 'analytics.view',
+    module: 'Analytics',
+  },
+  {
+    action: 'View',
     description: 'View department records and organization structure.',
     key: 'departments.view',
     module: 'Organization',
@@ -132,6 +138,7 @@ const seedRoles: Role[] = [
     name: 'Operations Administrator',
     permissionKeys: [
       'dashboard.view',
+      'analytics.view',
       'departments.view',
       'departments.manage',
       'users.view',

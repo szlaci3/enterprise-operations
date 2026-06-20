@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M12 — Analytics Platform
+Active Milestone: M13 — Global Search
 
 Objective:
 
-Establish advanced operational analytics with reusable metrics, trend
-analysis, interactive segmentation, and executive dashboard composition.
+Establish cross-entity discovery with one search vocabulary, typed results,
+filters, saved searches, and recent-search history.
 
 Success Criteria:
 
-* Analytics metrics have explicit validated definitions
-* Trends and operational distributions are derived from current domain data
-* Interactive segmentation supports executive and operational analysis
-* Analytics dashboards compose reusable visualization components
-* Reporting and analytics share consistent source contracts
+* Search indexes core business entities through stable adapters
+* Results are ranked and grouped across entity types
+* Filters and saved searches support repeatable discovery
+* Recent searches improve keyboard-driven navigation
+* Search results link directly to canonical entity routes
 
 Previous Phase:
 
@@ -375,7 +375,7 @@ Delivered:
 
 ## M12 — Analytics Platform
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -388,11 +388,25 @@ Deliverables:
 
 * Executive analytics experience
 
+Delivered:
+
+* Validated analytics filters, metrics, trends, and distribution contracts
+* 30, 90, and 180-day operational analysis windows
+* Department-level segmentation across task and approval activity
+* Active work, overdue risk, completion, and approval cycle metrics
+* Previous-period metric comparisons with favorable-direction semantics
+* Weekly task intake, completion, and approval-decision trend series
+* Task lifecycle, approval outcome, and department workload distributions
+* Reusable accessible metric, line-chart, and distribution components
+* Screen-reader tables and textual equivalents for every visualization
+* Typed `analytics.view` capability and protected analytics route
+* Lazy source aggregation that preserves domain and route bundle boundaries
+
 ---
 
 ## M13 — Global Search
 
-Status: Planned
+Status: Next
 
 Features:
 

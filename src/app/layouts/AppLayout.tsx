@@ -4,6 +4,7 @@ import {
   CheckSquare2,
   ClipboardList,
   LayoutDashboard,
+  LineChart,
   Network,
   Menu,
   Settings,
@@ -29,6 +30,7 @@ interface NavigationItem {
 
 const primaryNavigation: NavigationItem[] = [
   { icon: LayoutDashboard, label: 'Overview', to: '/overview' },
+  { icon: LineChart, label: 'Analytics', to: '/analytics' },
   { icon: ClipboardList, label: 'Tasks', to: '/tasks' },
   { icon: Waypoints, label: 'Workflows', to: '/workflows' },
   { icon: CheckSquare2, label: 'Approvals', to: '/approvals' },
