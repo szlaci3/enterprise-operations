@@ -757,6 +757,92 @@ enforcement.
 
 ---
 
+# ADR-011
+
+## Title
+
+Lifecycle-Preserving Managed Identities
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+User management introduces identities that will later receive roles,
+permissions, assignments, approval responsibilities, and audit history.
+Permanently deleting identities would break those future relationships and
+remove important organizational context.
+
+Users also have relationships to departments, managers, teams, and existing
+department owner snapshots.
+
+---
+
+### Decision
+
+Managed users use explicit lifecycle states: `invited`, `active`, `suspended`,
+and `deactivated`. The application does not delete user records.
+
+Allowed lifecycle transitions are enforced by the user service. Deactivation is
+blocked while active direct reports still reference the user. Manager
+relationships use nullable user identifiers and must remain acyclic.
+
+Department and team assignments are normalized identifiers validated against
+their owning domains. Department owner snapshots remain embedded for
+resilience and are resolved to managed user profiles by normalized email when
+possible.
+
+---
+
+### Alternatives Considered
+
+#### Permanently Delete Users
+
+Rejected because workflows, approvals, reports, and audit history will require
+stable actor references after a person leaves the organization.
+
+#### Store Manager and Team Objects Inside Each User
+
+Rejected because copied records would become stale and make reassignment
+expensive. Identifier relationships preserve a normalized organization model.
+
+#### Immediately Rewrite Department Owners to User IDs
+
+Rejected because persisted departments may reference people who are not yet
+managed users. The snapshot-plus-resolution approach is backward compatible
+and supports incremental migration.
+
+#### Allow Any Lifecycle Transition
+
+Rejected because states have operational meaning. For example, an invited user
+must become active before suspension, and a manager with active reports cannot
+be deactivated without reassignment.
+
+---
+
+### Consequences
+
+Positive:
+
+* stable identity references for future authorization and auditing
+* realistic joiner, access suspension, reactivation, and leaver behavior
+* normalized reporting and team relationships
+* incremental migration path for department ownership
+
+Negative:
+
+* inactive identities accumulate and require filtering
+* lifecycle rules add service complexity
+* email-based owner resolution is transitional rather than referentially exact
+
+These trade-offs are accepted to preserve organizational history and prepare
+for M5 authorization.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

@@ -16,20 +16,20 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M4 — User Management
+Active Milestone: M5 — Roles & Permissions
 
 Objective:
 
-Extend the organization model with managed identities, team membership, and
-the user lifecycle needed for assignments and future authorization.
+Establish the authorization model that governs access to platform capabilities
+through reusable roles, permissions, and access policies.
 
 Success Criteria:
 
-* User directory and profile routes are functional
-* User lifecycle states are explicit and validated
-* Users can be assigned to departments and teams
-* Identity changes persist through the abstracted data layer
-* Existing department ownership can evolve toward user references
+* Roles and permissions are explicit domain entities
+* Permission bundles can be assigned to managed users
+* Administrative access policies are visible and editable
+* Route and action authorization can consume the same permission model
+* Existing features remain usable under the simulated security model
 
 Previous Phase:
 
@@ -134,7 +134,7 @@ Delivered:
 
 ## M4 — User Management
 
-Status: Next
+Status: Completed (June 20, 2026)
 
 Features:
 
@@ -149,11 +149,22 @@ Deliverables:
 * Organization model
 * Identity management foundation
 
+Delivered:
+
+* Searchable and filterable managed user directory
+* User profiles with department, manager, direct-report, and team context
+* React Hook Form and Zod create/edit workflows
+* Explicit invited, active, suspended, and deactivated lifecycle states
+* Guarded lifecycle transitions that protect active reporting relationships
+* Unique business email and employee ID enforcement
+* Persisted team catalog and cross-functional team membership
+* Department ownership resolution to managed identities with snapshot fallback
+
 ---
 
 ## M5 — Roles & Permissions
 
-Status: Planned
+Status: Next
 
 Features:
 

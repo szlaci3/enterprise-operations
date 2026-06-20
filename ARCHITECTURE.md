@@ -234,6 +234,28 @@ The department feature is the reference implementation for entity management.
 Route pages remain thin, forms and business behavior stay inside the feature,
 and the mock API owns durable collection reads and writes.
 
+Current user domain:
+
+```text
+src/
+  features/
+    users/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    usersApi.ts
+  pages/
+    UsersPage.tsx
+    UserProfilePage.tsx
+    UserEditorPage.tsx
+```
+
+The user feature extends the entity-management pattern with lifecycle
+transitions, normalized manager relationships, department assignment, and
+membership in a persisted team catalog.
+
 ---
 
 # app/
@@ -496,7 +518,16 @@ Static routes are declared alongside entity routes and React Router performs
 route ranking. Successful create and edit operations navigate to the canonical
 detail route; successful deletion returns to the collection.
 
-The dashboard and department route modules use React Router lazy route loading.
+User management adds:
+
+```text
+/users
+/users/new
+/users/:userId
+/users/:userId/edit
+```
+
+The dashboard, department, and user route modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -552,6 +583,15 @@ Department mutations follow the same feature-owned query pattern:
 * services enforce uniqueness, hierarchy integrity, and deletion rules before
   the mock API changes persistent state
 
+User queries use a shared `users` key family for collection, detail, and team
+catalog data. Lifecycle mutations update the detail cache and invalidate the
+domain family using the same synchronization convention as entity edits.
+
+The user service also reads the department service when validating assignments.
+This is an intentional domain dependency: identities may reference departments,
+while departments do not require users to remain valid because their embedded
+owner snapshot is retained.
+
 ---
 
 # Persistence Strategy
@@ -589,6 +629,10 @@ The department mock API persists the complete validated collection under a
 domain-specific storage key. Missing or invalid stored collections are replaced
 with realistic seed data at the mock boundary.
 
+The user mock API persists user identities and the team catalog under separate
+domain keys. User records store normalized identifiers for department, manager,
+and team relationships rather than nested copies.
+
 ---
 
 # Validation Strategy
@@ -613,6 +657,23 @@ business rules.
 Field validation remains schema-driven. Cross-entity constraints—duplicate
 names, duplicate codes, circular reporting lines, and deletion with children—
 remain service responsibilities because they require collection context.
+
+User services apply the same rule: field validation is schema-driven, while
+unique email and employee identifiers, manager cycles, department availability,
+team existence, and lifecycle transition rules are enforced with current domain
+context before persistence.
+
+---
+
+# Organization Relationships
+
+Department ownership currently retains an embedded owner snapshot because it
+predates managed identities. The UI resolves that snapshot to a user profile by
+normalized email when a matching identity exists.
+
+This transitional approach provides navigable identity relationships without
+invalidating persisted department records. A future migration may add a direct
+`ownerUserId` while preserving the snapshot for historical display.
 
 ---
 

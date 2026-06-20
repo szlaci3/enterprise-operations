@@ -62,6 +62,38 @@ export const appRouter = createBrowserRouter([
         },
       },
       {
+        path: 'users',
+        lazy: async () => {
+          const { UsersPage } = await import('../../pages/UsersPage')
+          return { Component: UsersPage }
+        },
+      },
+      {
+        path: 'users/new',
+        lazy: async () => {
+          const { CreateUserPage } = await import(
+            '../../pages/UserEditorPage'
+          )
+          return { Component: CreateUserPage }
+        },
+      },
+      {
+        path: 'users/:userId',
+        lazy: async () => {
+          const { UserProfilePage } = await import(
+            '../../pages/UserProfilePage'
+          )
+          return { Component: UserProfilePage }
+        },
+      },
+      {
+        path: 'users/:userId/edit',
+        lazy: async () => {
+          const { EditUserPage } = await import('../../pages/UserEditorPage')
+          return { Component: EditUserPage }
+        },
+      },
+      {
         path: 'approvals',
         element: <ModuleOverviewPage module="approvals" />,
       },

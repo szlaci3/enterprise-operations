@@ -17,6 +17,7 @@ import {
   departmentListOptions,
   useDeleteDepartment,
 } from '../queries/departmentQueries'
+import { userListOptions } from '../../users/queries/userQueries'
 import { DepartmentServiceError } from '../services/departmentService'
 import { DepartmentStatusBadge } from './DepartmentStatusBadge'
 
@@ -33,6 +34,7 @@ export function DepartmentDetail() {
   const navigate = useNavigate()
   const departmentQuery = useQuery(departmentDetailOptions(departmentId))
   const departmentsQuery = useQuery(departmentListOptions())
+  const usersQuery = useQuery(userListOptions())
   const deleteDepartment = useDeleteDepartment()
   const [isDeleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -81,6 +83,9 @@ export function DepartmentDetail() {
   const children = departments
     .filter((item) => item.parentDepartmentId === department.id)
     .sort((left, right) => left.name.localeCompare(right.name))
+  const ownerUser = usersQuery.data?.find(
+    (user) => user.email.toLowerCase() === department.owner.email.toLowerCase(),
+  )
 
   const handleDelete = async () => {
     setDeleteError(null)
@@ -197,8 +202,16 @@ export function DepartmentDetail() {
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {department.owner.title}
               </p>
+              {ownerUser ? (
+                <Link
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-brand-300"
+                  to={`/users/${ownerUser.id}`}
+                >
+                  View managed identity
+                </Link>
+              ) : null}
               <a
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-brand-300"
+                className={`${ownerUser ? 'mt-2' : 'mt-3'} inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-brand-300`}
                 href={`mailto:${department.owner.email}`}
               >
                 <Mail aria-hidden="true" className="size-4" />

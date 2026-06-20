@@ -8,6 +8,7 @@ import {
   Menu,
   Settings,
   ShieldCheck,
+  UsersRound,
   type LucideIcon,
   X,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ const primaryNavigation: NavigationItem[] = [
 
 const secondaryNavigation: NavigationItem[] = [
   { icon: Network, label: 'Departments', to: '/departments' },
+  { icon: UsersRound, label: 'Users', to: '/users' },
   { icon: ShieldCheck, label: 'Administration', to: '/administration' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ]
