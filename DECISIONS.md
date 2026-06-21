@@ -1972,6 +1972,119 @@ with a clear backend migration path.
 
 ---
 
+# ADR-023
+
+## Title
+
+Explicit Personal and Administrative Ownership in a Unified Settings Domain
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Theme preference originally lived in persisted Zustand state while
+notification preferences used a validated service and query boundary. As the
+platform adds organization policy and feature configuration, continuing to
+scatter settings by presentation location would make ownership, authorization,
+migration, and future backend integration unclear.
+
+The application shell also needs a small set of settings at runtime without
+eagerly loading the complete administration experience.
+
+---
+
+### Decision
+
+Create a dedicated settings domain with one validated persisted store
+containing:
+
+* managed-user-owned workspace preferences
+* organization-owned policy and branding
+* organization-wide feature rollout configuration
+* append-only administrative change records
+
+Personal settings contain theme, information density, time zone, date format,
+and reduced-motion preference. Users may update only the record addressed to
+their current managed identity.
+
+Organization settings contain name, support contact, default time zone, week
+start, fiscal year start, and retention policy. Feature configuration uses
+explicit enabled, pilot, and disabled states. Organization and feature changes
+require `settings.manage` in the product surface and append field-level history.
+
+Use TanStack Query for settings snapshots and mutations because settings are
+server-like records. Retain Zustand only for transient shell interaction state.
+Migrate the former Zustand theme value into the first settings store.
+
+Let the shell consume settings query definitions for branding, theme, density,
+reduced motion, and feature navigation. Load the settings service dynamically
+and keep the administration workspace route-lazy.
+
+Feature-disabled modules are removed from navigation and protected by a direct
+route availability boundary. Embedded collaboration and document surfaces use
+the same rollout snapshot.
+
+---
+
+### Alternatives Considered
+
+#### Keep Theme in Zustand and Add Administrative Settings Separately
+
+Rejected because durable preferences would have inconsistent ownership,
+validation, caching, and migration semantics.
+
+#### Store Every Preference in One Global UI Store
+
+Rejected because organization policy and feature rollout are server-like
+shared records, not local interface state.
+
+#### Merge Notification Preferences into the Settings Store
+
+Rejected because notification subscriptions are delivery policy consumed by
+the notification projector and remain cohesive in that domain. The settings
+workspace composes the existing feature-owned form.
+
+#### Use Boolean Feature Flags
+
+Rejected because a pilot state communicates controlled rollout without
+inventing user targeting before a concrete cohort model exists.
+
+#### Record No Administrative History
+
+Rejected because organization-wide policy changes need actor, time, field, and
+before/after traceability.
+
+---
+
+### Consequences
+
+Positive:
+
+* personal and administrative ownership is explicit
+* shell behavior reflects persisted managed-user settings
+* organization branding and policy have one validated source
+* rollout controls affect navigation, routes, and embedded feature surfaces
+* administrative changes retain field-level history
+* notification preference ownership remains cohesive
+* a backend settings API can replace the mock service without UI redesign
+
+Negative:
+
+* the application shell performs one settings snapshot query at startup
+* feature availability and RBAC remain separate checks
+* pilot state is descriptive and does not yet target cohorts
+* date and time preferences are not yet applied to every legacy formatter
+* frontend-only administration is not a security boundary
+
+These trade-offs are accepted for coherent platform configuration and a clear
+path to centralized backend policy.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

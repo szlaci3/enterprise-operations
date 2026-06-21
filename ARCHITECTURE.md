@@ -495,6 +495,27 @@ versions, attachment policy, and typed links to operational records. Tasks and
 approvals consume a reusable linked-document panel without embedding document
 content or ownership logic in their aggregates.
 
+Current settings domain:
+
+```text
+src/
+  features/
+    settings/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    settingsApi.ts
+  pages/
+    SettingsPage.tsx
+```
+
+The settings feature owns per-user workspace preferences, organization policy,
+feature rollout state, and administrative change history. The application
+shell consumes its lightweight query contract for theme, reduced motion,
+density, organization branding, and feature-aware navigation.
+
 ---
 
 # app/
@@ -653,8 +674,9 @@ store/
 
 Avoid storing server-like data here.
 
-The initial `uiStore` persists only the user's theme preference. Transient
-mobile-navigation state is intentionally excluded from persistence.
+The `uiStore` owns transient mobile-navigation state only. Durable workspace
+preferences moved to the settings domain so they have managed-user ownership,
+runtime validation, and a future backend-compatible service boundary.
 
 ---
 
@@ -863,6 +885,16 @@ Document management adds:
 The route tree requires `documents.view`. Intake, versioning, lifecycle, and
 link management require `documents.manage`; version downloads independently
 require `documents.download`.
+
+Settings uses:
+
+```text
+/settings
+```
+
+The route requires `settings.view`. Every user with access may update their own
+workspace and notification preferences. Organization policy, feature rollout,
+and administrative change history require `settings.manage`.
 
 Analytics adds:
 
@@ -1092,6 +1124,22 @@ Version creation appends content and attribution without modifying prior
 versions. Links reference operational entity identifiers and are validated
 through source-domain services before persistence.
 
+Settings use one validated store with explicitly separated ownership:
+
+```text
+Managed user
+    -> personal workspace preferences
+
+Organization administrator
+    -> organization policy
+    -> feature rollout configuration
+    -> append-only settings change records
+```
+
+Personal mutations replace only the current user's preference record.
+Administrative mutations append field-level change records and replace the
+organization or selected feature configuration atomically.
+
 ---
 
 # Persistence Strategy
@@ -1178,6 +1226,12 @@ downloadable and durable. Policy limits each version to 750 KB and each
 document to 3 MB so local browser storage remains bounded. A future backend may
 replace content data URLs with object-storage references without changing the
 document metadata, version, or link contracts.
+
+The settings mock API persists organization policy, feature rollout,
+administrative history, and per-user preferences in one validated store. A
+one-time read migration preserves the theme from the former Zustand-persisted
+UI record. Notification preferences remain in the notification domain because
+they directly govern event projection policy.
 
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
@@ -1272,6 +1326,11 @@ available departments, supported MIME types, attachment size, aggregate
 storage allowance, unique titles, source entity existence, and allowed
 lifecycle transitions before persistence.
 
+Settings schemas validate personal preferences, organization policy, feature
+states, and administrative change records. Services verify active actors,
+normalize typed form input, preserve per-user ownership, and produce append-only
+field changes for organization and feature mutations.
+
 ---
 
 # Organization Relationships
@@ -1333,6 +1392,8 @@ feature boundary.
 * global theme synchronization
 * browser router mounting
 * the top-level application error boundary
+* synchronization of server-like workspace preferences into document-root
+  theme and reduced-motion behavior
 
 Providers should be added here only when their concern is truly application
 wide. Domain-specific providers belong inside their owning feature.
@@ -1413,6 +1474,10 @@ discussion persistence or mutation logic.
 Document routes are lazy-loaded. Task and approval detail chunks share the
 linked-document panel and query contract; document persistence and cross-domain
 relationship validation load only when those queries execute.
+
+The application shell imports only settings query definitions and schemas.
+Settings persistence and business services load dynamically when the snapshot
+query executes. Full settings administration UI remains route-lazy.
 
 ---
 

@@ -24,6 +24,8 @@ export const permissionKeySchema = z.enum([
   'documents.view',
   'documents.manage',
   'documents.download',
+  'settings.view',
+  'settings.manage',
 ])
 
 export const permissionSchema = z.object({
@@ -42,6 +44,7 @@ export const permissionSchema = z.object({
     'Audit',
     'Collaboration',
     'Documents',
+    'Settings',
   ]),
 })
 

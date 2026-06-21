@@ -14,6 +14,8 @@ const collaborationPermissionMigrationKey =
   'enterprise-operations-collaboration-permissions-v1'
 const documentPermissionMigrationKey =
   'enterprise-operations-document-permissions-v1'
+const settingsPermissionMigrationKey =
+  'enterprise-operations-settings-permissions-v1'
 
 const permissionCatalog: Permission[] = [
   {
@@ -154,6 +156,18 @@ const permissionCatalog: Permission[] = [
     key: 'documents.download',
     module: 'Documents',
   },
+  {
+    action: 'View',
+    description: 'View personal preferences and platform configuration.',
+    key: 'settings.view',
+    module: 'Settings',
+  },
+  {
+    action: 'Manage',
+    description: 'Change organization policy and feature rollout controls.',
+    key: 'settings.manage',
+    module: 'Settings',
+  },
 ]
 
 const allPermissionKeys = permissionCatalog.map((permission) => permission.key)
@@ -193,6 +207,8 @@ const seedRoles: Role[] = [
       'documents.view',
       'documents.manage',
       'documents.download',
+      'settings.view',
+      'settings.manage',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -215,6 +231,7 @@ const seedRoles: Role[] = [
       'collaboration.contribute',
       'documents.view',
       'documents.download',
+      'settings.view',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -232,6 +249,7 @@ const seedRoles: Role[] = [
       'reports.view',
       'collaboration.view',
       'documents.view',
+      'settings.view',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -320,6 +338,22 @@ function readRoles(): Role[] {
         }
       })
       browserStorage.write(documentPermissionMigrationKey, true)
+    }
+    if (browserStorage.read(settingsPermissionMigrationKey) !== true) {
+      synchronized = synchronized.map((role) => {
+        const seedRole = seedRoles.find((seed) => seed.id === role.id)
+        const settingsKeys =
+          seedRole?.permissionKeys.filter((key) =>
+            key.startsWith('settings.'),
+          ) ?? []
+        return {
+          ...role,
+          permissionKeys: [
+            ...new Set([...role.permissionKeys, ...settingsKeys]),
+          ],
+        }
+      })
+      browserStorage.write(settingsPermissionMigrationKey, true)
     }
     browserStorage.write(rolesStorageKey, synchronized)
     return synchronized

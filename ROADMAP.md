@@ -16,19 +16,19 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M16 – Settings Platform
+Active Milestone: M17 – Command Palette
 
 Objective:
 
-Consolidate user preferences, organization settings, feature configuration,
-and administrative controls into a governed settings platform.
+Create a keyboard-first command surface for navigation, global actions,
+discovery, and high-frequency operational workflows.
 
 Success Criteria:
 
-* Personal and organization settings have explicit ownership
-* Administrative changes use typed validation and permissions
-* Configuration remains compatible with future backend persistence
-* Settings surfaces are coherent, searchable, and accessible
+* Commands are permission-aware and feature-aware
+* Navigation and high-value actions are available without pointer input
+* Search and commands share a coherent keyboard interaction model
+* The command registry is extensible without coupling the application shell
 
 Previous Phase:
 
@@ -500,7 +500,7 @@ Delivered:
 
 ## M16 – Settings Platform
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -513,11 +513,29 @@ Deliverables:
 
 * Platform administration
 
+Delivered:
+
+* Validated per-user workspace preferences for theme, density, time zone, date
+  format, and reduced motion
+* Migration of the legacy persisted theme into the new user-owned settings
+  record
+* Governed organization policy for branding, support contact, calendar
+  defaults, fiscal year, and records retention
+* Organization-wide enabled, pilot, and disabled feature rollout states
+* Runtime feature availability applied to navigation, direct routes, and
+  embedded collaboration and document surfaces
+* Application-shell consumption of organization branding, workspace density,
+  theme, and reduced-motion preferences
+* Append-only organization and feature configuration change history
+* Separate settings view and administration permissions with role migration
+* Responsive personal and administrative settings workspace
+* Runtime-validated mock persistence and TanStack Query synchronization
+
 ---
 
-## M17 — Command Palette
+## M17 – Command Palette
 
-Status: Planned
+Status: Next
 
 Features:
 

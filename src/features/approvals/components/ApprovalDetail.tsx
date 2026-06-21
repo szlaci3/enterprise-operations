@@ -23,6 +23,7 @@ import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
 import { EntityCollaborationPanel } from '../../collaboration/components/EntityCollaborationPanel'
 import type { CollaborationBusinessEvent } from '../../collaboration/schemas/collaborationSchemas'
 import { EntityDocumentsPanel } from '../../documents/components/EntityDocumentsPanel'
+import { FeatureGate } from '../../settings/components/FeatureGate'
 import { userListOptions } from '../../users/queries/userQueries'
 import { workflowDetailOptions } from '../../workflows/queries/workflowQueries'
 import {
@@ -317,18 +318,22 @@ export function ApprovalDetail() {
             </ol>
           </Card>
 
-          <EntityCollaborationPanel
-            businessEvents={businessEvents}
-            entityId={approval.id}
-            entityType="approval"
-          />
+          <FeatureGate feature="collaboration">
+            <EntityCollaborationPanel
+              businessEvents={businessEvents}
+              entityId={approval.id}
+              entityType="approval"
+            />
+          </FeatureGate>
         </div>
 
         <div className="space-y-6">
-          <EntityDocumentsPanel
-            entityId={approval.id}
-            entityType="approval"
-          />
+          <FeatureGate feature="documents">
+            <EntityDocumentsPanel
+              entityId={approval.id}
+              entityType="approval"
+            />
+          </FeatureGate>
           <EntityAuditPanel entityId={approval.id} entityType="approval" />
 
           {canAct ? (

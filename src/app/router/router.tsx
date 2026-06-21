@@ -25,9 +25,14 @@ export const appRouter = createBrowserRouter([
           const { AuthorizationBoundary } = await import(
             '../../features/access/components/AuthorizationBoundary'
           )
+          const { FeatureAvailabilityBoundary } = await import(
+            '../../features/settings/components/FeatureAvailabilityBoundary'
+          )
           return {
             Component: () => (
-              <AuthorizationBoundary permission="analytics.view" />
+              <AuthorizationBoundary permission="analytics.view">
+                <FeatureAvailabilityBoundary feature="analytics" />
+              </AuthorizationBoundary>
             ),
           }
         },
@@ -404,9 +409,14 @@ export const appRouter = createBrowserRouter([
           const { AuthorizationBoundary } = await import(
             '../../features/access/components/AuthorizationBoundary'
           )
+          const { FeatureAvailabilityBoundary } = await import(
+            '../../features/settings/components/FeatureAvailabilityBoundary'
+          )
           return {
             Component: () => (
-              <AuthorizationBoundary permission="documents.view" />
+              <AuthorizationBoundary permission="documents.view">
+                <FeatureAvailabilityBoundary feature="documents" />
+              </AuthorizationBoundary>
             ),
           }
         },
@@ -487,9 +497,26 @@ export const appRouter = createBrowserRouter([
       {
         path: 'settings',
         lazy: async () => {
-          const { SettingsPage } = await import('../../pages/SettingsPage')
-          return { Component: SettingsPage }
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="settings.view" />
+            ),
+          }
         },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { SettingsPage } = await import(
+                '../../pages/SettingsPage'
+              )
+              return { Component: SettingsPage }
+            },
+          },
+        ],
       },
       {
         path: '*',

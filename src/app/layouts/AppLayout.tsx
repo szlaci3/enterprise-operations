@@ -17,14 +17,19 @@ import {
   type LucideIcon,
   X,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '../../shared/components/Button'
 import { NotificationBell } from '../../features/notifications/components/NotificationBell'
 import { SearchLauncher } from '../../features/search/components/SearchLauncher'
+import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
+import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
 import { useUiStore } from '../../store/uiStore'
+import { currentSessionUserId } from '../session/currentSession'
 
 interface NavigationItem {
+  feature?: FeatureKey
   icon: LucideIcon
   label: string
   to: string
@@ -32,12 +37,22 @@ interface NavigationItem {
 
 const primaryNavigation: NavigationItem[] = [
   { icon: LayoutDashboard, label: 'Overview', to: '/overview' },
-  { icon: LineChart, label: 'Analytics', to: '/analytics' },
+  {
+    feature: 'analytics',
+    icon: LineChart,
+    label: 'Analytics',
+    to: '/analytics',
+  },
   { icon: ClipboardList, label: 'Tasks', to: '/tasks' },
   { icon: Waypoints, label: 'Workflows', to: '/workflows' },
   { icon: CheckSquare2, label: 'Approvals', to: '/approvals' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },
-  { icon: Files, label: 'Documents', to: '/documents' },
+  {
+    feature: 'documents',
+    icon: Files,
+    label: 'Documents',
+    to: '/documents',
+  },
 ]
 
 const secondaryNavigation: NavigationItem[] = [
@@ -67,7 +82,13 @@ function NavigationLink({ icon: Icon, label, to }: NavigationItem) {
   )
 }
 
-function SidebarContent() {
+function SidebarContent({
+  featureIsVisible,
+  organizationName,
+}: {
+  featureIsVisible: (feature?: FeatureKey) => boolean
+  organizationName: string
+}) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
@@ -79,7 +100,7 @@ function SidebarContent() {
             Enterprise Ops
           </p>
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-            Northstar Group
+            {organizationName}
           </p>
         </div>
       </div>
@@ -89,9 +110,11 @@ function SidebarContent() {
         className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-5"
       >
         <div className="space-y-1">
-          {primaryNavigation.map((item) => (
-            <NavigationLink key={item.to} {...item} />
-          ))}
+          {primaryNavigation
+            .filter((item) => featureIsVisible(item.feature))
+            .map((item) => (
+              <NavigationLink key={item.to} {...item} />
+            ))}
         </div>
         <div>
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -126,6 +149,7 @@ function SidebarContent() {
 
 export function AppLayout() {
   const location = useLocation()
+  const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
   const isMobileNavigationOpen = useUiStore(
     (state) => state.isMobileNavigationOpen,
   )
@@ -135,6 +159,13 @@ export function AppLayout() {
   const toggleMobileNavigation = useUiStore(
     (state) => state.toggleMobileNavigation,
   )
+  const organizationName =
+    settingsQuery.data?.organization.name ?? 'Northstar Group'
+  const density = settingsQuery.data?.personal.density ?? 'comfortable'
+  const featureIsVisible = (feature?: FeatureKey) =>
+    !feature ||
+    settingsQuery.data?.features.find((item) => item.key === feature)?.state !==
+      'disabled'
 
   useEffect(() => {
     closeMobileNavigation()
@@ -165,7 +196,10 @@ export function AppLayout() {
       </a>
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:block">
-        <SidebarContent />
+        <SidebarContent
+          featureIsVisible={featureIsVisible}
+          organizationName={organizationName}
+        />
       </aside>
 
       {isMobileNavigationOpen ? (
@@ -188,13 +222,20 @@ export function AppLayout() {
             >
               <X aria-hidden="true" className="size-5" />
             </Button>
-            <SidebarContent />
+            <SidebarContent
+              featureIsVisible={featureIsVisible}
+              organizationName={organizationName}
+            />
           </aside>
         </div>
       ) : null}
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+        <header
+          className={`sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6 ${
+            density === 'compact' ? 'h-14' : 'h-16'
+          }`}
+        >
           <Button
             aria-label="Open navigation"
             className="size-10 p-0 lg:hidden"
@@ -232,7 +273,11 @@ export function AppLayout() {
         </header>
 
         <main
-          className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8"
+          className={`mx-auto w-full max-w-[1600px] ${
+            density === 'compact'
+              ? 'p-3 sm:p-4 lg:p-5'
+              : 'p-4 sm:p-6 lg:p-8'
+          }`}
           id="main-content"
         >
           <Outlet />

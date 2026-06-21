@@ -23,6 +23,7 @@ import { EntityCollaborationPanel } from '../../collaboration/components/EntityC
 import type { CollaborationBusinessEvent } from '../../collaboration/schemas/collaborationSchemas'
 import { departmentDetailOptions } from '../../departments/queries/departmentQueries'
 import { EntityDocumentsPanel } from '../../documents/components/EntityDocumentsPanel'
+import { FeatureGate } from '../../settings/components/FeatureGate'
 import { userListOptions } from '../../users/queries/userQueries'
 import {
   taskDetailOptions,
@@ -238,14 +239,18 @@ export function TaskDetail() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
-        <EntityCollaborationPanel
-          businessEvents={businessEvents}
-          entityId={task.id}
-          entityType="task"
-        />
+        <FeatureGate feature="collaboration">
+          <EntityCollaborationPanel
+            businessEvents={businessEvents}
+            entityId={task.id}
+            entityType="task"
+          />
+        </FeatureGate>
 
         <div className="space-y-6">
-          <EntityDocumentsPanel entityId={task.id} entityType="task" />
+          <FeatureGate feature="documents">
+            <EntityDocumentsPanel entityId={task.id} entityType="task" />
+          </FeatureGate>
           <EntityAuditPanel entityId={task.id} entityType="task" />
 
           {options.length > 0 ? (
