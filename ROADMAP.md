@@ -16,19 +16,19 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M17 – Command Palette
+Active Milestone: M18 – Offline Support
 
 Objective:
 
-Create a keyboard-first command surface for navigation, global actions,
-discovery, and high-frequency operational workflows.
+Introduce resilient cached experiences, explicit synchronization state,
+recoverable mutation queues, and understandable conflict handling.
 
 Success Criteria:
 
-* Commands are permission-aware and feature-aware
-* Navigation and high-value actions are available without pointer input
-* Search and commands share a coherent keyboard interaction model
-* The command registry is extensible without coupling the application shell
+* Critical read experiences remain useful during temporary connectivity loss
+* Deferred writes expose clear pending, failed, and synchronized states
+* Conflicts preserve user intent and avoid silent overwrites
+* Offline behavior remains compatible with future backend synchronization
 
 Previous Phase:
 
@@ -535,7 +535,7 @@ Delivered:
 
 ## M17 – Command Palette
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -548,11 +548,25 @@ Deliverables:
 
 * Productivity layer
 
+Delivered:
+
+* Global Ctrl/Cmd+K command palette replacing the former search-only shortcut
+* Typed code-owned registry for navigation and high-frequency create actions
+* Permission filtering before commands are presented or executable
+* Feature-rollout filtering for analytics and document commands
+* Deterministic command matching across labels, descriptions, and keywords
+* Lazy permission-aware entity search after a meaningful query is entered
+* Direct entity navigation plus a full-search handoff retaining query context
+* Arrow-key navigation, Enter execution, Escape dismissal, and focus trapping
+* Accessible dialog, combobox, active-descendant, and listbox semantics
+* Responsive header launcher with keyboard guidance and no new dependency
+* Search service retained behind a dynamic chunk outside the shell bundle
+
 ---
 
-## M18 — Offline Support
+## M18 – Offline Support
 
-Status: Planned
+Status: Next
 
 Features:
 

@@ -2085,6 +2085,121 @@ path to centralized backend policy.
 
 ---
 
+# ADR-024
+
+## Title
+
+Code-Owned Permission-Aware Command Registry with Lazy Entity Discovery
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The global Ctrl/Cmd+K shortcut originally navigated directly to the search
+route. As the platform gained more modules and create workflows, power users
+needed a single keyboard surface for navigation, actions, and record discovery.
+
+A command palette is mounted in the application shell, so importing every
+feature service or duplicating search indexing there would create bundle and
+maintenance problems.
+
+---
+
+### Decision
+
+Use a code-owned typed command registry. Every command declares:
+
+* stable identifier, label, description, keywords, and category
+* canonical destination route
+* optional required permission
+* optional required feature rollout
+* an icon vocabulary owned by the command presentation
+
+Filter commands against the current effective-access and settings snapshots
+before matching. Rank static commands deterministically by exact label, label
+prefix, label containment, keyword containment, and description containment.
+
+After the palette is open and the user enters at least two characters,
+dynamically import the existing search service and request permission-aware
+entity results. Map those results into the same selectable presentation
+contract as commands. Always offer a handoff to the full search route with the
+query retained.
+
+Ctrl/Cmd+K now belongs to the command palette, superseding only the shortcut
+ownership portion of ADR-020. The `/search` route and its search architecture
+remain unchanged.
+
+Implement the palette with native React and browser interaction primitives:
+
+* modal dialog and combobox semantics
+* arrow-key selection and Enter execution
+* Escape dismissal
+* focus placement and focus trapping
+* outside-click dismissal
+
+Do not add a command-menu dependency while the required behavior remains
+small and maintainable.
+
+---
+
+### Alternatives Considered
+
+#### Continue Navigating Ctrl/Cmd+K to Global Search
+
+Rejected because search cannot efficiently expose create actions, settings,
+or module navigation.
+
+#### Build Commands from the Sidebar DOM
+
+Rejected because actions not present in navigation would be omitted, and
+presentation markup is not a stable registry or authorization contract.
+
+#### Persist Commands as User-Editable Data
+
+Rejected because commands represent implemented routes and capabilities.
+Persisted arbitrary commands could target unsupported or unauthorized actions.
+
+#### Eagerly Load Entity Collections in the Shell
+
+Rejected because it would pull source domains into the initial bundle and
+perform unnecessary reads before the palette is used.
+
+#### Add a Third-Party Command Palette Library
+
+Deferred because the current interaction model is compact, accessible, and
+does not justify another dependency. This can be reconsidered if nested
+commands, richer composition, or plugin-provided actions emerge.
+
+---
+
+### Consequences
+
+Positive:
+
+* one keyboard surface covers navigation, creation, and discovery
+* unavailable commands are filtered before presentation
+* the registry is explicit, typed, and easy to extend
+* entity discovery reuses existing authorization and ranking behavior
+* cross-domain search remains outside the initial shell bundle
+* no additional runtime dependency is introduced
+
+Negative:
+
+* new route actions require a command registry entry to become discoverable
+* command keywords are curated manually
+* entity results begin only after two characters
+* the palette does not yet support nested parameters or inline mutations
+* browser-level keyboard conventions may vary outside Ctrl/Cmd+K
+
+These trade-offs are accepted for a focused productivity layer with controlled
+bundle ownership and a clear extension point.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

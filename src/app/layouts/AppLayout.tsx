@@ -21,8 +21,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '../../shared/components/Button'
+import { CommandLauncher } from '../../features/commands/components/CommandLauncher'
 import { NotificationBell } from '../../features/notifications/components/NotificationBell'
-import { SearchLauncher } from '../../features/search/components/SearchLauncher'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
 import { useUiStore } from '../../store/uiStore'
@@ -255,7 +255,7 @@ export function AppLayout() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <SearchLauncher />
+            <CommandLauncher />
             <NotificationBell />
             <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:inline-flex">
               Environment ready

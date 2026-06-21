@@ -516,6 +516,23 @@ feature rollout state, and administrative change history. The application
 shell consumes its lightweight query contract for theme, reduced motion,
 density, organization branding, and feature-aware navigation.
 
+Current command domain:
+
+```text
+src/
+  features/
+    commands/
+      components/
+      queries/
+      schemas/
+      services/
+```
+
+The command feature owns the global keyboard launcher, code-owned command
+registry, permission and feature filtering, deterministic command matching,
+dialog focus behavior, and lazy cross-entity discovery. Commands contain
+canonical routes rather than importing destination feature components.
+
 ---
 
 # app/
@@ -911,7 +928,9 @@ Global search adds:
 /search
 ```
 
-Search is available from the application header and through Ctrl/Cmd+K.
+Search remains available at `/search`. Ctrl/Cmd+K now opens the command
+palette, which can hand off a query to full search or navigate directly to one
+of its permission-aware entity results.
 Authorization is enforced at index composition: only entity types backed by a
 permission in the current effective-access snapshot are loaded and returned.
 
@@ -1107,6 +1126,25 @@ No search index is persisted. Every query reads current domain collections.
 Exact title, title prefix, title containment, description containment, body
 containment, and token prefix matches receive descending score weights.
 Updated timestamps break equal-score ties.
+
+The command palette composes two result sources:
+
+```text
+Typed command registry
+    -> permission + feature filtering
+    -> deterministic local matching
+
+Typed search request
+    -> lazy search service import
+    -> permission-aware entity results
+
+Both
+    -> one keyboard-selectable palette result model
+```
+
+Registry commands remain code-owned because each entry corresponds to a real
+route and implemented capability. Cross-entity results reuse the authoritative
+search service rather than introducing a second index or ranking engine.
 
 Documents are persisted as complete aggregates containing metadata, links,
 and immutable versions:
@@ -1478,6 +1516,12 @@ relationship validation load only when those queries execute.
 The application shell imports only settings query definitions and schemas.
 Settings persistence and business services load dynamically when the snapshot
 query executes. Full settings administration UI remains route-lazy.
+
+The always-mounted command launcher contains the small command registry,
+keyboard interaction, and permission/settings query consumers. The search
+service is dynamically imported only after the palette is open and a query has
+at least two characters. Full search remains route-lazy, and its service
+dynamically imports only authorized source domains while building an index.
 
 ---
 
