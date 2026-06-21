@@ -8,6 +8,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
 import { Button } from '../../../shared/components/Button'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
@@ -37,6 +38,8 @@ export function ReportDetail() {
   const executionQuery = useQuery(reportExecutionOptions(reportId))
   const deleteReport = useDeleteReport()
   const { can } = useAuthorization()
+  const [page, setPage] = useState(1)
+  const pageSize = 50
 
   if (reportQuery.isPending || executionQuery.isPending) {
     return (
@@ -73,6 +76,12 @@ export function ReportDetail() {
     await deleteReport.mutateAsync(report.id)
     navigate('/reports', { replace: true })
   }
+  const pageCount = Math.max(1, Math.ceil(result.rows.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const visibleRows = result.rows.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  )
 
   return (
     <div className="space-y-6">
@@ -162,8 +171,8 @@ export function ReportDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {result.rows.map((row, index) => (
-                  <tr key={`${report.id}-${index}`}>
+                {visibleRows.map((row, index) => (
+                  <tr key={`${report.id}-${(currentPage - 1) * pageSize + index}`}>
                     {result.columns.map((column) => (
                       <td
                         className="max-w-80 px-4 py-3 align-top text-slate-600 dark:text-slate-300"
@@ -180,6 +189,33 @@ export function ReportDetail() {
             </table>
           </div>
         )}
+        {result.rows.length > pageSize ? (
+          <div className="flex flex-col gap-3 border-t border-slate-200 p-4 text-sm dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-slate-500 dark:text-slate-400">
+              Showing {(currentPage - 1) * pageSize + 1}–
+              {Math.min(currentPage * pageSize, result.rows.length)} of{' '}
+              {result.rows.length} rows
+            </p>
+            <div className="flex gap-2">
+              <Button
+                disabled={currentPage === 1}
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                variant="secondary"
+              >
+                Previous
+              </Button>
+              <Button
+                disabled={currentPage === pageCount}
+                onClick={() =>
+                  setPage((value) => Math.min(pageCount, value + 1))
+                }
+                variant="secondary"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Card>
 
       <PermissionGate permission="reports.manage">

@@ -36,6 +36,7 @@ export function AuditViewer() {
   const [actorUserId, setActorUserId] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [visibleCount, setVisibleCount] = useState(50)
   const records = useMemo(() => auditQuery.data ?? [], [auditQuery.data])
   const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
   const userById = useMemo(
@@ -78,6 +79,7 @@ export function AuditViewer() {
     search,
     userById,
   ])
+  const visibleRecords = filteredRecords.slice(0, visibleCount)
 
   if (auditQuery.isPending || usersQuery.isPending) {
     return (
@@ -254,7 +256,7 @@ export function AuditViewer() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredRecords.map((record) => {
+            {visibleRecords.map((record) => {
               const actor = userById.get(record.actorUserId)
               const EntityIcon =
                 record.entityType === 'approval'
@@ -323,6 +325,18 @@ export function AuditViewer() {
                 </article>
               )
             })}
+            {visibleRecords.length < filteredRecords.length ? (
+              <div className="p-4 text-center">
+                <button
+                  className="min-h-10 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  onClick={() => setVisibleCount((count) => count + 50)}
+                  type="button"
+                >
+                  Show 50 more ({filteredRecords.length - visibleRecords.length}{' '}
+                  remaining)
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
       </Card>

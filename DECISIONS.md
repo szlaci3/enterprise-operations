@@ -2326,6 +2326,117 @@ extended domain by domain.
 
 ---
 
+# ADR-026
+
+## Title
+
+Measured Rendering Windows and Stable Dependency Chunk Ownership
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The platform had extensive route-level lazy loading, but the production build
+still produced an application-owned entry chunk of approximately 356 KB
+uncompressed. High-volume tables and feeds also rendered every matching record,
+making DOM work grow linearly with data volume.
+
+Different collection surfaces have different semantic and layout needs. A
+single table abstraction or virtualization library would add complexity where
+simple bounded rendering is sufficient.
+
+---
+
+### Decision
+
+Use measured, surface-specific rendering strategies:
+
+* virtualize the managed-user table because rows have a stable height
+* render audit history in bounded batches because record height varies
+* paginate report results because semantic tables and predictable navigation
+  are more valuable than continuous scroll
+
+Implement a small reusable `useVirtualRows` hook that calculates start index,
+end index, overscan, and spacer heights. Keep row rendering and table semantics
+inside the owning feature. Expose total row count and absolute row indexes for
+assistive technology.
+
+Keep report CSV export independent from visible pagination and retain the
+previous validated result during background refresh.
+
+Create stable Vite manual chunks for React/router, TanStack Query, forms,
+validation, state, icons, and remaining vendor code. Load command,
+notification, and synchronization shell utilities through React lazy
+boundaries.
+
+Use explicit longer stale and garbage-collection windows for stable identity,
+team, and report execution queries. Business mutations continue to invalidate
+their owning key families.
+
+Do not introduce a virtualization or data-grid dependency for the current
+requirements.
+
+---
+
+### Alternatives Considered
+
+#### Add a Full Data-Grid Library
+
+Rejected because current tables do not require column pinning, aggregation,
+editable cells, or complex selection. The dependency and abstraction cost
+would exceed the demonstrated need.
+
+#### Virtualize Every Collection
+
+Rejected because variable-height audit records and semantic report tables are
+clearer with bounded disclosure and pagination.
+
+#### Rely Only on Route-Level Lazy Loading
+
+Rejected because always-mounted shell utilities and vendor dependencies still
+left a large application entry chunk with unstable cache ownership.
+
+#### Put Every Dependency in One Vendor Chunk
+
+Rejected because unrelated dependency updates would invalidate the entire
+vendor cache and obscure ownership in build output.
+
+#### Use Infinite Query APIs for Local Mock Collections
+
+Deferred because source services currently return complete validated
+collections. Pagination at presentation boundaries provides proportional DOM
+work without pretending the transport is paginated.
+
+---
+
+### Consequences
+
+Positive:
+
+* visible DOM work is bounded for the largest collection surfaces
+* semantic tables and accessibility metadata are preserved
+* the application-owned entry chunk fell from roughly 356 KB to 33 KB
+* vendor chunks have stable, understandable ownership
+* report refreshes avoid clearing useful current data
+* no additional runtime dependency is introduced
+
+Negative:
+
+* fixed-row virtualization depends on a maintained row-height contract
+* audit batch size and report page size are code-owned
+* the large React/router vendor chunk still loads for the application runtime
+* manual chunk groups require maintenance when foundational dependencies change
+* true transport pagination remains future backend work
+
+These trade-offs are accepted for measurable improvements with limited
+architectural complexity.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

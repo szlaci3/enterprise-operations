@@ -1524,6 +1524,36 @@ Potential future optimizations:
 
 Optimization work should follow measurable need.
 
+The M19 production build introduced stable dependency chunk groups:
+
+* React, React DOM, and React Router
+* TanStack Query
+* React Hook Form and resolver integration
+* Zod validation
+* Zustand state
+* Lucide icons
+* remaining third-party dependencies
+
+Application shell utilities for commands, notifications, and synchronization
+are loaded through React lazy boundaries. This reduced the application-owned
+entry chunk from approximately 356 KB to 33 KB uncompressed while retaining
+route-level domain chunks.
+
+Large collection rendering uses the smallest strategy appropriate to the
+surface:
+
+* fixed-height identity rows use a reusable virtual window with overscan
+* audit records use bounded incremental disclosure because record height varies
+* report result tables use semantic pagination with 50 rows per page
+
+Virtualized tables preserve total row count and absolute row indexes for
+assistive technology. Report CSV export continues to operate on the complete
+validated result rather than the visible page.
+
+Stable identity and team catalogs use longer stale and garbage-collection
+windows. Report execution retains its previous result during refresh and uses
+a bounded cache lifetime. Mutation invalidation remains authoritative.
+
 The operational dashboard uses lightweight SVG charts rather than introducing
 a charting dependency for its initial KPI and workload visualizations. Every
 chart has a textual or tabular equivalent for accessibility.
@@ -1579,6 +1609,10 @@ aggregates on authoritative browser-persisted data. General queries use
 `networkMode: always` so validated local mock reads remain available when the
 browser reports offline; task transition mutations use the same mode so the
 platform queue, rather than TanStack Query, owns deferral behavior.
+
+The shared `useVirtualRows` hook performs only scroll-position arithmetic and
+does not own entity rendering, selection, or business behavior. This keeps
+virtualization reusable without introducing a generic table framework.
 
 ---
 

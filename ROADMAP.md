@@ -16,19 +16,19 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M19 – Advanced Performance
+Active Milestone: M20 – Production Hardening
 
 Objective:
 
-Improve large-data rendering, caching behavior, loading boundaries, and bundle
-ownership using measured enterprise-scale performance patterns.
+Add diagnostics, recovery controls, operational monitoring, and failure
+handling needed for a mature production-like platform.
 
 Success Criteria:
 
-* High-volume lists remain responsive and accessible
-* Query and rendering work is proportional to visible data
-* Route and shell bundles retain clear feature ownership
-* Performance changes have measurable rationale and preserve behavior
+* Runtime and persistence health are visible and understandable
+* Recoverable failures provide safe user-directed actions
+* Diagnostics support operational troubleshooting without developer tools
+* Production safeguards preserve business data and access boundaries
 
 Previous Phase:
 
@@ -599,7 +599,7 @@ Delivered:
 
 ## M19 – Advanced Performance
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -612,11 +612,28 @@ Deliverables:
 
 * Enterprise-scale performance
 
+Delivered:
+
+* Reusable fixed-row virtualization hook with overscan and scroll clamping
+* Virtualized managed-user directory rendering only the visible row window
+* Sticky accessible table headers and complete row-count/index semantics
+* Bounded 50-record audit rendering with incremental disclosure
+* Paginated 50-row report presentation while preserving full CSV export
+* Previous report result retained during background refresh
+* Explicit longer stale and garbage-collection windows for stable identity,
+  team, and report execution data
+* Async shell chunks for command palette, notifications, and synchronization
+* Stable manual vendor chunks for React/router, query, forms, validation,
+  state, icons, and remaining third-party code
+* Application-owned entry chunk reduced from approximately 356 KB to 33 KB
+  uncompressed in the production build
+* No virtualization or table dependency added
+
 ---
 
-## M20 — Production Hardening
+## M20 – Production Hardening
 
-Status: Planned
+Status: Next
 
 Features:
 

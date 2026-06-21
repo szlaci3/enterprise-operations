@@ -9,6 +9,7 @@ import { userListOptions } from '../queries/userQueries'
 import type { UserStatus } from '../schemas/userSchemas'
 import { UserAvatar } from './UserAvatar'
 import { UserStatusBadge } from './UserStatusBadge'
+import { useVirtualRows } from '../../../shared/hooks/useVirtualRows'
 
 type StatusFilter = UserStatus | 'all'
 
@@ -49,6 +50,15 @@ export function UserDirectory() {
         ),
       )
   }, [departmentId, search, status, users])
+  const virtualRows = useVirtualRows({
+    count: filtered.length,
+    rowHeight: 73,
+    viewportHeight: 584,
+  })
+  const visibleUsers = filtered.slice(
+    virtualRows.startIndex,
+    virtualRows.endIndex,
+  )
 
   if (usersQuery.isPending || departmentsQuery.isPending) {
     return (
@@ -189,9 +199,17 @@ export function UserDirectory() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-220 text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+          <div
+            className="max-h-146 overflow-auto"
+            onScroll={(event) =>
+              virtualRows.setScrollTop(event.currentTarget.scrollTop)
+            }
+          >
+            <table
+              aria-rowcount={filtered.length}
+              className="w-full min-w-220 text-left text-sm"
+            >
+              <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wider text-slate-500 shadow-[0_1px_0_0_var(--color-slate-200)] dark:bg-slate-800 dark:text-slate-400 dark:shadow-[0_1px_0_0_var(--color-slate-700)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold" scope="col">User</th>
                   <th className="px-5 py-3 font-semibold" scope="col">Department</th>
@@ -204,13 +222,22 @@ export function UserDirectory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filtered.map((user) => {
+                {virtualRows.paddingTop > 0 ? (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={6}
+                      style={{ height: virtualRows.paddingTop }}
+                    />
+                  </tr>
+                ) : null}
+                {visibleUsers.map((user, index) => {
                   const department = departments.find(
                     (item) => item.id === user.departmentId,
                   )
                   const manager = users.find((item) => item.id === user.managerId)
                   return (
                     <tr
+                      aria-rowindex={virtualRows.startIndex + index + 2}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/40"
                       key={user.id}
                     >
@@ -259,6 +286,14 @@ export function UserDirectory() {
                     </tr>
                   )
                 })}
+                {virtualRows.paddingBottom > 0 ? (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={6}
+                      style={{ height: virtualRows.paddingBottom }}
+                    />
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

@@ -14,7 +14,12 @@ export const userKeys = {
 }
 
 export const userListOptions = () =>
-  queryOptions({ queryFn: userService.list, queryKey: userKeys.list() })
+  queryOptions({
+    gcTime: 30 * 60_000,
+    queryFn: userService.list,
+    queryKey: userKeys.list(),
+    staleTime: 5 * 60_000,
+  })
 
 export const userDetailOptions = (id: string) =>
   queryOptions({
@@ -23,7 +28,12 @@ export const userDetailOptions = (id: string) =>
   })
 
 export const teamListOptions = () =>
-  queryOptions({ queryFn: userService.listTeams, queryKey: userKeys.teams() })
+  queryOptions({
+    gcTime: 30 * 60_000,
+    queryFn: userService.listTeams,
+    queryKey: userKeys.teams(),
+    staleTime: 10 * 60_000,
+  })
 
 function useUserMutationCache() {
   const queryClient = useQueryClient()

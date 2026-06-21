@@ -18,16 +18,32 @@ import {
   X,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '../../shared/components/Button'
-import { CommandLauncher } from '../../features/commands/components/CommandLauncher'
-import { NotificationBell } from '../../features/notifications/components/NotificationBell'
-import { SyncStatus } from '../../features/offline/components/SyncStatus'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
 import { useUiStore } from '../../store/uiStore'
 import { currentSessionUserId } from '../session/currentSession'
+
+const CommandLauncher = lazy(async () => {
+  const module = await import(
+    '../../features/commands/components/CommandLauncher'
+  )
+  return { default: module.CommandLauncher }
+})
+
+const NotificationBell = lazy(async () => {
+  const module = await import(
+    '../../features/notifications/components/NotificationBell'
+  )
+  return { default: module.NotificationBell }
+})
+
+const SyncStatus = lazy(async () => {
+  const module = await import('../../features/offline/components/SyncStatus')
+  return { default: module.SyncStatus }
+})
 
 interface NavigationItem {
   feature?: FeatureKey
@@ -256,9 +272,27 @@ export function AppLayout() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <CommandLauncher />
-            <NotificationBell />
-            <SyncStatus />
+            <Suspense
+              fallback={
+                <div className="h-10 w-10 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800 md:w-48" />
+              }
+            >
+              <CommandLauncher />
+            </Suspense>
+            <Suspense
+              fallback={
+                <div className="size-10 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+              }
+            >
+              <NotificationBell />
+            </Suspense>
+            <Suspense
+              fallback={
+                <div className="h-9 w-9 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800 sm:w-24" />
+              }
+            >
+              <SyncStatus />
+            </Suspense>
             <div className="hidden h-8 w-px bg-slate-200 dark:bg-slate-700 md:block" />
             <div className="hidden items-center gap-2 sm:flex">
               <span className="flex size-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-white">

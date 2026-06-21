@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   queryOptions,
   useMutation,
   useQueryClient,
@@ -25,9 +26,11 @@ export const reportDetailOptions = (id: string) =>
 
 export const reportExecutionOptions = (id: string) =>
   queryOptions({
+    gcTime: 15 * 60_000,
+    placeholderData: keepPreviousData,
     queryFn: () => reportService.execute(id),
     queryKey: reportKeys.execution(id),
-    staleTime: 10_000,
+    staleTime: 60_000,
   })
 
 export const reportTemplateOptions = () =>
