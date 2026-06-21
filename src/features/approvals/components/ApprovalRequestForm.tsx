@@ -242,27 +242,27 @@ export function ApprovalRequestForm({
                 ) : null}
               </label>
               <div className="flex gap-1">
-                <Button
+                <button
                   aria-label={`Move reviewer ${index + 1} up`}
-                  className="size-10 p-0"
+                  className="rounded-md p-2"
                   disabled={index === 0}
                   onClick={() => moveReviewer(index, -1)}
-                  variant="ghost"
+                  type="button"
                 >
                   <ArrowUp aria-hidden="true" className="size-4" />
-                </Button>
-                <Button
+                </button>
+                <button
                   aria-label={`Move reviewer ${index + 1} down`}
-                  className="size-10 p-0"
+                  className="rounded-md p-2"
                   disabled={index === reviewerIds.length - 1}
                   onClick={() => moveReviewer(index, 1)}
-                  variant="ghost"
+                  type="button"
                 >
                   <ArrowDown aria-hidden="true" className="size-4" />
-                </Button>
-                <Button
+                </button>
+                <button
                   aria-label={`Remove reviewer ${index + 1}`}
-                  className="size-10 p-0"
+                  className="rounded-md p-2"
                   disabled={reviewerIds.length === 1}
                   onClick={() =>
                     setValue(
@@ -271,10 +271,10 @@ export function ApprovalRequestForm({
                       { shouldValidate: true },
                     )
                   }
-                  variant="ghost"
+                  type="button"
                 >
                   <Trash2 aria-hidden="true" className="size-4" />
-                </Button>
+                </button>
               </div>
             </div>
           ))}

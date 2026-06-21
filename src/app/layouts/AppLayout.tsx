@@ -20,7 +20,6 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { lazy, Suspense, useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Button } from '../../shared/components/Button'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
 import { useUiStore } from '../../store/uiStore'
@@ -231,14 +230,14 @@ export function AppLayout() {
             aria-label="Mobile navigation"
             className="relative h-full w-72 bg-white shadow-xl dark:bg-slate-900"
           >
-            <Button
+            <button
               aria-label="Close navigation"
-              className="absolute right-3 top-3 z-10 size-10 p-0"
+              className="absolute right-3 top-3 z-10 rounded-md p-2"
               onClick={closeMobileNavigation}
-              variant="ghost"
+              type="button"
             >
               <X aria-hidden="true" className="size-5" />
-            </Button>
+            </button>
             <SidebarContent
               featureIsVisible={featureIsVisible}
               organizationName={organizationName}
@@ -253,14 +252,14 @@ export function AppLayout() {
             density === 'compact' ? 'h-14' : 'h-16'
           }`}
         >
-          <Button
+          <button
             aria-label="Open navigation"
-            className="size-10 p-0 lg:hidden"
+            className="rounded-md p-2 lg:hidden"
             onClick={toggleMobileNavigation}
-            variant="ghost"
+            type="button"
           >
             <Menu aria-hidden="true" className="size-5" />
-          </Button>
+          </button>
 
           <div>
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
