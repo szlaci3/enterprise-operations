@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '../../../shared/components/Badge'
-import { Button } from '../../../shared/components/Button'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
 import {
@@ -75,14 +74,16 @@ export function OperationalDashboard() {
           The operational snapshot could not be validated or retrieved. Try
           loading the latest data again.
         </p>
-        <Button
-          className="mt-5"
+        <button
+          aria-label="Refresh dashboard"
+          className="rounded-md p-2"
+          disabled={snapshotQuery.isFetching}
           onClick={() => snapshotQuery.refetch()}
-          variant="secondary"
+          type="button"
         >
           <RefreshCw aria-hidden="true" className="size-4" />
           Retry
-        </Button>
+        </button>
       </Card>
     )
   }
@@ -120,18 +121,18 @@ export function OperationalDashboard() {
                 </option>
               ))}
             </select>
-            <Button
+            <button
               aria-label="Refresh dashboard"
-              className="size-10 p-0"
+              className="rounded-md p-2"
               disabled={snapshotQuery.isFetching}
               onClick={() => snapshotQuery.refetch()}
-              variant="secondary"
+              type="button"
             >
               <RefreshCw
                 aria-hidden="true"
                 className={`size-4 ${snapshotQuery.isFetching ? 'animate-spin' : ''}`}
               />
-            </Button>
+            </button>
           </div>
         }
         description="Monitor service delivery, workload movement, operating risk, and the actions shaping today's performance."

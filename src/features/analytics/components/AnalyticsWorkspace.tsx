@@ -105,18 +105,18 @@ export function AnalyticsWorkspace() {
               <option value="90d">Last 90 days</option>
               <option value="180d">Last 180 days</option>
             </select>
-            <Button
+            <button
               aria-label="Refresh analytics"
-              className="size-10 p-0"
+              className="rounded-md p-2"
               disabled={snapshotQuery.isFetching}
               onClick={() => snapshotQuery.refetch()}
-              variant="secondary"
+              type="button"
             >
               <RefreshCw
                 aria-hidden="true"
                 className={`size-4 ${snapshotQuery.isFetching ? 'animate-spin' : ''}`}
               />
-            </Button>
+            </button>
           </div>
         }
         description="Analyze work delivery, approval responsiveness, operational risk, and workload concentration across the enterprise."
