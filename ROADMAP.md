@@ -16,19 +16,19 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M18 – Offline Support
+Active Milestone: M19 – Advanced Performance
 
 Objective:
 
-Introduce resilient cached experiences, explicit synchronization state,
-recoverable mutation queues, and understandable conflict handling.
+Improve large-data rendering, caching behavior, loading boundaries, and bundle
+ownership using measured enterprise-scale performance patterns.
 
 Success Criteria:
 
-* Critical read experiences remain useful during temporary connectivity loss
-* Deferred writes expose clear pending, failed, and synchronized states
-* Conflicts preserve user intent and avoid silent overwrites
-* Offline behavior remains compatible with future backend synchronization
+* High-volume lists remain responsive and accessible
+* Query and rendering work is proportional to visible data
+* Route and shell bundles retain clear feature ownership
+* Performance changes have measurable rationale and preserve behavior
 
 Previous Phase:
 
@@ -566,7 +566,7 @@ Delivered:
 
 ## M18 – Offline Support
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -578,11 +578,28 @@ Deliverables:
 
 * Resilience improvements
 
+Delivered:
+
+* Browser connectivity tracking with automatic online and offline events
+* Explicit work-offline control for deterministic resilience testing
+* Persisted validated mutation queue for task status transitions
+* Immediate optimistic projection of queued transitions into task list and
+  detail queries
+* Multiple offline task transitions compacted into one intent chain per task
+* Automatic reconnect replay and manual synchronization controls
+* Pending, retry, conflict, and synchronized status in the application shell
+* Optimistic task badges and conflict-aware status controls
+* Version-based conflict detection using the authoritative `updatedAt` value
+* Explicit use-remote and keep-local conflict resolution
+* Local-intent rebasing over the latest remote task when keeping local changes
+* Browser-persisted task reads remain available while disconnected
+* TanStack Query network behavior delegated to the platform offline layer
+
 ---
 
-## M19 — Advanced Performance
+## M19 – Advanced Performance
 
-Status: Planned
+Status: Next
 
 Features:
 

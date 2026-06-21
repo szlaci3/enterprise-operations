@@ -7,6 +7,8 @@ import {
 import { approvalService } from '../../approvals/services/approvalService'
 import { departmentService } from '../../departments/services/departmentService'
 import { userService } from '../../users/services/userService'
+import { offlineService } from '../../offline/services/offlineService'
+import { connectionIsOnline } from '../../offline/store/connectivityStore'
 import {
   taskFormSchema,
   taskSchema,
@@ -22,6 +24,7 @@ export class TaskServiceError extends Error {
   readonly code:
     | 'invalid-approval'
     | 'invalid-assignment'
+    | 'offline-conflict'
     | 'invalid-transition'
     | 'not-found'
 
@@ -127,13 +130,22 @@ export const taskService = {
     values: TaskTransitionFormValues,
   ): Promise<Task> {
     const parsed = taskTransitionFormSchema.parse(values)
-    const [task, actor] = await Promise.all([
+    const [authoritativeTask, actor] = await Promise.all([
       taskService.get(id),
       userService.get(actorUserId),
     ])
-    if (!task) {
+    if (!authoritativeTask) {
       throw new TaskServiceError('The task no longer exists.', 'not-found')
     }
+    const existingOperation = await offlineService.operationForTask(id)
+    if (existingOperation?.state === 'conflict') {
+      throw new TaskServiceError(
+        'Resolve the offline conflict before adding another status update.',
+        'offline-conflict',
+      )
+    }
+    const task =
+      existingOperation?.optimisticTask ?? authoritativeTask
     if (!actor || actor.status !== 'active') {
       throw new TaskServiceError(
         'Only active users can update task status.',
@@ -167,6 +179,19 @@ export const taskService = {
       ],
       status: parsed.status,
       updatedAt: now,
+    }
+    if (!connectionIsOnline() || existingOperation) {
+      const operation = await offlineService.enqueueTaskTransition(
+        authoritativeTask,
+        actorUserId,
+        updated,
+      )
+      if (connectionIsOnline()) {
+        const synchronized =
+          await offlineService.synchronizeOperation(operation)
+        return synchronized ?? updated
+      }
+      return updated
     }
     return taskSchema.parse(await updateTaskApi(updated))
   },

@@ -2200,6 +2200,132 @@ bundle ownership and a clear extension point.
 
 ---
 
+# ADR-025
+
+## Title
+
+Persisted Intent Queue with Optimistic Projection and Version-Based Conflict Resolution
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Operational users need to record task progress during temporary connectivity
+loss. TanStack Query's default offline behavior can pause mutations, but a
+production-like system also needs durable intent, visible synchronization
+state, optimistic reads after reload, and explicit handling when the
+authoritative record changes elsewhere.
+
+Replaying several task transitions independently would compare each operation
+against timestamps that only exist locally and could turn a valid local chain
+into false conflicts.
+
+---
+
+### Decision
+
+Introduce a dedicated offline domain and begin with task status transitions.
+
+Persist one queued intent per task containing:
+
+* the authoritative task `updatedAt` observed before offline work
+* all locally created status transition events
+* the latest optimistic task aggregate
+* actor, creation, retry, failure, and conflict metadata
+* an optional current authoritative task when conflict occurs
+
+Further offline transitions for the same task update the existing optimistic
+aggregate and append events to that operation. They do not create independent
+replay records.
+
+Task list and detail queries read authoritative task persistence and overlay
+queued optimistic aggregates. Source-domain services used by audit,
+notifications, reporting, and search continue to read authoritative data so
+unsynchronized events do not escape into secondary projections.
+
+On reconnect, compare the current authoritative `updatedAt` with the queued
+base timestamp:
+
+* when equal, persist the optimistic aggregate and remove the queue item
+* when different, retain both local intent and the remote aggregate as a
+  conflict
+
+Conflict resolution is explicit:
+
+* "Use remote" discards the queued local intent
+* "Keep mine" rebases local transition events over the latest remote task,
+  updates the expected base timestamp, and synchronizes again
+
+Observe browser online/offline events and provide a non-persisted work-offline
+override for deterministic testing. Show pending, failed, and conflict state in
+the application shell and on affected task details.
+
+Configure read queries with `networkMode: always` because the current mock
+services read validated browser persistence. Configure task transitions and
+offline queue mutations the same way so application logic owns deferral and
+replay.
+
+---
+
+### Alternatives Considered
+
+#### Let TanStack Query Pause and Resume Mutations
+
+Rejected because paused mutations alone do not provide durable domain intent,
+optimistic projection after reload, conflict records, or user-directed
+resolution.
+
+#### Queue Every Transition as an Independent Mutation
+
+Rejected because later transitions would reference local intermediate
+timestamps that the authoritative store never observed.
+
+#### Persist Optimistic Tasks Directly in the Task Repository
+
+Rejected because unsynchronized work would become indistinguishable from
+authoritative records and could feed audit, notifications, reports, and search.
+
+#### Last Write Wins
+
+Rejected because silently replacing remote work would lose concurrent changes
+and undermine operational accountability.
+
+#### Apply Offline Support to Every Mutation Immediately
+
+Deferred because each domain needs explicit conflict and optimistic semantics.
+Task status transitions provide a complete reusable pattern before expanding
+coverage.
+
+---
+
+### Consequences
+
+Positive:
+
+* task progress can be recorded and recovered across offline reloads
+* optimistic state is visible without contaminating authoritative persistence
+* synchronization and failure state is explicit
+* concurrent updates are detected instead of silently overwritten
+* local intent and remote state remain available during resolution
+* the queue contract maps to a future service worker or backend sync API
+
+Negative:
+
+* initial offline writes cover task status transitions only
+* keeping local status can intentionally override a remote lifecycle outcome
+* queued aggregates consume additional browser storage
+* browser connectivity is an imperfect proxy for backend reachability
+* frontend-only replay cannot provide transactional multi-user guarantees
+
+These trade-offs are accepted for a complete resilience pattern that can be
+extended domain by domain.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

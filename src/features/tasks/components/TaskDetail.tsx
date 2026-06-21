@@ -6,7 +6,9 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
+  CloudUpload,
   Pencil,
+  TriangleAlert,
   UserRound,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -24,6 +26,7 @@ import type { CollaborationBusinessEvent } from '../../collaboration/schemas/col
 import { departmentDetailOptions } from '../../departments/queries/departmentQueries'
 import { EntityDocumentsPanel } from '../../documents/components/EntityDocumentsPanel'
 import { FeatureGate } from '../../settings/components/FeatureGate'
+import { offlineSnapshotOptions } from '../../offline/queries/offlineQueries'
 import { userListOptions } from '../../users/queries/userQueries'
 import {
   taskDetailOptions,
@@ -69,6 +72,7 @@ export function TaskDetail() {
     enabled: Boolean(taskQuery.data?.approvalRequestId),
   })
   const transitionTask = useTransitionTask(taskId, currentSessionUserId)
+  const offlineSnapshotQuery = useQuery(offlineSnapshotOptions())
   const [currentTime] = useState(() => Date.now())
   const {
     formState: { errors },
@@ -135,6 +139,9 @@ export function TaskDetail() {
     !['completed', 'cancelled'].includes(task.status) &&
     new Date(task.dueDate).getTime() < currentTime
   const options = transitionOptions[task.status]
+  const offlineOperation = offlineSnapshotQuery.data?.operations.find(
+    (operation) => operation.taskId === task.id,
+  )
   const businessEvents: CollaborationBusinessEvent[] = task.events.map(
     (event) => ({
       actorUserId: event.actorUserId,
@@ -180,6 +187,24 @@ export function TaskDetail() {
           <div className="flex flex-wrap items-center gap-2">
             <TaskStatusBadge status={task.status} />
             <TaskPriorityBadge priority={task.priority} />
+            {offlineOperation ? (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  offlineOperation.state === 'conflict'
+                    ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
+                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                }`}
+              >
+                {offlineOperation.state === 'conflict' ? (
+                  <TriangleAlert aria-hidden="true" className="size-3.5" />
+                ) : (
+                  <CloudUpload aria-hidden="true" className="size-3.5" />
+                )}
+                {offlineOperation.state === 'conflict'
+                  ? 'Sync conflict'
+                  : 'Pending sync'}
+              </span>
+            ) : null}
             <PermissionGate permission="tasks.manage">
               <Link
                 className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold dark:border-slate-700 dark:bg-slate-900"
@@ -261,6 +286,17 @@ export function TaskDetail() {
                   Update status
                 </h2>
                 <form className="mt-4 space-y-4" onSubmit={submitTransition}>
+                  {offlineOperation?.state === 'conflict' ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+                      Resolve this task in the synchronization menu before
+                      recording another status update.
+                    </p>
+                  ) : offlineOperation ? (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                      This status is saved locally and will synchronize when
+                      connectivity is available.
+                    </p>
+                  ) : null}
                   <label className="text-sm font-semibold">
                     Next status
                     <select
@@ -293,7 +329,10 @@ export function TaskDetail() {
                   ) : null}
                   <Button
                     className="w-full"
-                    disabled={transitionTask.isPending}
+                    disabled={
+                      transitionTask.isPending ||
+                      offlineOperation?.state === 'conflict'
+                    }
                     type="submit"
                   >
                     Save status update

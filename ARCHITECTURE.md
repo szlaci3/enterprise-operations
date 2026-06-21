@@ -533,6 +533,26 @@ registry, permission and feature filtering, deterministic command matching,
 dialog focus behavior, and lazy cross-entity discovery. Commands contain
 canonical routes rather than importing destination feature components.
 
+Current offline domain:
+
+```text
+src/
+  features/
+    offline/
+      components/
+      queries/
+      schemas/
+      services/
+      store/
+  mocks/
+    offlineApi.ts
+```
+
+The offline feature owns connectivity state, persisted mutation intents,
+optimistic task projection, reconnect replay, synchronization status, and
+explicit conflict resolution. Initial write coverage is intentionally focused
+on task status transitions, the platform's most frequent operational mutation.
+
 ---
 
 # app/
@@ -1178,6 +1198,25 @@ Personal mutations replace only the current user's preference record.
 Administrative mutations append field-level change records and replace the
 organization or selected feature configuration atomically.
 
+Offline task transitions use a persisted intent projection:
+
+```text
+Authoritative task + expected updatedAt
+        + local transition events
+        -> optimistic task projection
+        -> persisted offline operation
+        -> task list/detail query overlay
+
+Reconnect
+        -> compare authoritative updatedAt
+        -> match: persist optimistic aggregate and remove operation
+        -> mismatch: preserve local intent + remote task as conflict
+```
+
+Multiple transitions for the same task update one queued operation while
+retaining all local transition events. This avoids replaying an invalid chain
+against intermediate server timestamps.
+
 ---
 
 # Persistence Strategy
@@ -1270,6 +1309,11 @@ administrative history, and per-user preferences in one validated store. A
 one-time read migration preserves the theme from the former Zustand-persisted
 UI record. Notification preferences remain in the notification domain because
 they directly govern event projection policy.
+
+The offline mock API persists validated operations under a dedicated storage
+key. Each task operation stores its authoritative base timestamp, optimistic
+aggregate, transition events, retry state, and optional conflicting remote
+aggregate. Queue reads and writes remain independent from task persistence.
 
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
@@ -1369,6 +1413,11 @@ states, and administrative change records. Services verify active actors,
 normalize typed form input, preserve per-user ownership, and produce append-only
 field changes for organization and feature mutations.
 
+Offline schemas validate queued operation state, authoritative version
+identity, optimistic task aggregates, transition events, retry metadata, and
+conflicting remote values. Task lifecycle validation still occurs in the task
+service before an operation is queued.
+
 ---
 
 # Organization Relationships
@@ -1432,6 +1481,7 @@ feature boundary.
 * the top-level application error boundary
 * synchronization of server-like workspace preferences into document-root
   theme and reduced-motion behavior
+* browser connectivity observation and reconnect queue synchronization
 
 Providers should be added here only when their concern is truly application
 wide. Domain-specific providers belong inside their owning feature.
@@ -1522,6 +1572,13 @@ keyboard interaction, and permission/settings query consumers. The search
 service is dynamically imported only after the palette is open and a query has
 at least two characters. Full search remains route-lazy, and its service
 dynamically imports only authorized source domains while building an index.
+
+The always-mounted synchronization indicator reads only the lightweight
+offline queue and connectivity store. Task queries overlay queued optimistic
+aggregates on authoritative browser-persisted data. General queries use
+`networkMode: always` so validated local mock reads remain available when the
+browser reports offline; task transition mutations use the same mode so the
+platform queue, rather than TanStack Query, owns deferral behavior.
 
 ---
 

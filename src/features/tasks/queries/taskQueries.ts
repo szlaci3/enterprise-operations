@@ -8,6 +8,7 @@ import type {
   TaskTransitionFormValues,
 } from '../schemas/taskSchemas'
 import { taskService } from '../services/taskService'
+import { offlineService } from '../../offline/services/offlineService'
 
 export const taskKeys = {
   all: ['tasks'] as const,
@@ -16,11 +17,19 @@ export const taskKeys = {
 }
 
 export const taskListOptions = () =>
-  queryOptions({ queryFn: taskService.list, queryKey: taskKeys.list() })
+  queryOptions({
+    networkMode: 'always',
+    queryFn: async () => offlineService.projectTasks(await taskService.list()),
+    queryKey: taskKeys.list(),
+  })
 
 export const taskDetailOptions = (id: string) =>
   queryOptions({
-    queryFn: () => taskService.get(id),
+    networkMode: 'always',
+    queryFn: async () => {
+      const task = await taskService.get(id)
+      return task ? offlineService.projectTask(task) : null
+    },
     queryKey: taskKeys.detail(id),
   })
 
@@ -54,10 +63,15 @@ export function useUpdateTask(id: string, actorUserId: string) {
 }
 
 export function useTransitionTask(id: string, actorUserId: string) {
+  const queryClient = useQueryClient()
   const updateCache = useTaskCache()
   return useMutation({
+    networkMode: 'always',
     mutationFn: (values: TaskTransitionFormValues) =>
       taskService.transition(id, actorUserId, values),
     onSuccess: (task) => updateCache(id, task),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['offline'] })
+    },
   })
 }

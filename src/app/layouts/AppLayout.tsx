@@ -23,6 +23,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '../../shared/components/Button'
 import { CommandLauncher } from '../../features/commands/components/CommandLauncher'
 import { NotificationBell } from '../../features/notifications/components/NotificationBell'
+import { SyncStatus } from '../../features/offline/components/SyncStatus'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
 import { useUiStore } from '../../store/uiStore'
@@ -257,9 +258,7 @@ export function AppLayout() {
           <div className="ml-auto flex items-center gap-2">
             <CommandLauncher />
             <NotificationBell />
-            <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:inline-flex">
-              Environment ready
-            </span>
+            <SyncStatus />
             <div className="hidden h-8 w-px bg-slate-200 dark:bg-slate-700 md:block" />
             <div className="hidden items-center gap-2 sm:flex">
               <span className="flex size-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-white">

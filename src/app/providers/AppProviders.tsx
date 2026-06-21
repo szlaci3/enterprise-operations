@@ -9,6 +9,7 @@ import { appRouter } from '../router/router'
 import { AppErrorBoundary } from '../../shared/components/AppErrorBoundary'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import { currentSessionUserId } from '../session/currentSession'
+import { ConnectivitySynchronizer } from '../../features/offline/components/ConnectivitySynchronizer'
 
 function ThemeSynchronizer({ children }: { children: ReactNode }) {
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
@@ -40,6 +41,7 @@ export function AppProviders() {
       new QueryClient({
         defaultOptions: {
           queries: {
+            networkMode: 'always',
             staleTime: 30_000,
             retry: 1,
             refetchOnWindowFocus: false,
@@ -54,9 +56,11 @@ export function AppProviders() {
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeSynchronizer>
-          <RouterProvider router={appRouter} />
-        </ThemeSynchronizer>
+        <ConnectivitySynchronizer>
+          <ThemeSynchronizer>
+            <RouterProvider router={appRouter} />
+          </ThemeSynchronizer>
+        </ConnectivitySynchronizer>
       </QueryClientProvider>
     </AppErrorBoundary>
   )
