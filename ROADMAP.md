@@ -12,27 +12,31 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 # Current Phase
 
-## Phase 2 — Core Operations
+## Phase 3 – Operational Resilience
 
 Status: ACTIVE
 
-Active Milestone: M20 – Production Hardening
+Active Milestone: M21 – Incident Management
 
 Objective:
 
-Add diagnostics, recovery controls, operational monitoring, and failure
-handling needed for a mature production-like platform.
+Establish governed incident intake, ownership, severity, response timelines,
+service impact, and post-incident learning.
 
 Success Criteria:
 
-* Runtime and persistence health are visible and understandable
-* Recoverable failures provide safe user-directed actions
-* Diagnostics support operational troubleshooting without developer tools
-* Production safeguards preserve business data and access boundaries
+* Incidents have durable ownership, severity, service impact, and lifecycle
+* Response work connects to operational tasks and governed evidence
+* Timelines preserve actor-attributed response and resolution activity
+* Reporting and analytics can consume incident outcomes
 
 Previous Phase:
 
-* Phase 1 — Foundation completed June 20, 2026
+* Phase 2 – Core Operations completed June 21, 2026
+* Organization, access, workflows, approvals, tasks, communication, audit,
+  reporting, analytics, search, collaboration, documents, settings,
+  productivity, offline resilience, performance, and diagnostics are operational
+* Phase 1 – Foundation completed June 20, 2026
 * Application shell, query layer, domain structure, mock API infrastructure,
   local persistence, and the first business-facing dashboard are operational
 
@@ -633,7 +637,7 @@ Delivered:
 
 ## M20 – Production Hardening
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -645,6 +649,42 @@ Features:
 Deliverables:
 
 * Mature platform experience
+
+Delivered:
+
+* Protected system diagnostics workspace with dedicated view and recovery
+  permissions
+* Sanitized browser-local incident capture for global render, route,
+  unhandled error, and unhandled rejection failures
+* Bounded 100-record runtime incident retention with route and stack context
+* Runtime stability, persistence, synchronization, and connectivity health
+  checks
+* Browser persistence availability probe and per-store footprint inspection
+  without exposing stored business payloads
+* Query cache, active, stale, fetching, mutation, and error summaries
+* Downloadable JSON support bundle with runtime and health metadata
+* Safe refresh, queued-change retry, incident cleanup, and cache-reload controls
+* Recovery controls independently protected by `diagnostics.manage`
+* Diagnostics-aware global and route error recovery boundaries
+* Telemetry failure containment preventing recursive unhandled incidents
+
+---
+
+## M21 – Incident Management
+
+Status: Next
+
+Features:
+
+* Incident intake
+* Severity and service impact
+* Response ownership
+* Incident timelines
+* Post-incident reviews
+
+Deliverables:
+
+* Operational incident response foundation
 
 ---
 

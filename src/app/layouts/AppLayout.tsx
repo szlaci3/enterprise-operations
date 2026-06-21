@@ -4,13 +4,13 @@ import {
   CheckSquare2,
   ClipboardList,
   Files,
+  HeartPulse,
   LayoutDashboard,
   LineChart,
   Network,
   Menu,
   Settings,
   ScrollText,
-  ShieldCheck,
   ShieldEllipsis,
   UsersRound,
   Waypoints,
@@ -77,7 +77,7 @@ const secondaryNavigation: NavigationItem[] = [
   { icon: UsersRound, label: 'Users', to: '/users' },
   { icon: ShieldEllipsis, label: 'Access control', to: '/access' },
   { icon: ScrollText, label: 'Audit trail', to: '/audit' },
-  { icon: ShieldCheck, label: 'Administration', to: '/administration' },
+  { icon: HeartPulse, label: 'System health', to: '/diagnostics' },
   { icon: Settings, label: 'Settings', to: '/settings' },
 ]
 

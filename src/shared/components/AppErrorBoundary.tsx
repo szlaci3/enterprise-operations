@@ -22,6 +22,16 @@ export class AppErrorBoundary extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Unrecoverable application error', error, info)
+    void import(
+      '../../features/diagnostics/services/diagnosticsService'
+    ).then(({ diagnosticsService }) =>
+      diagnosticsService.recordIncident({
+        error: new Error(`${error.message}\n${info.componentStack ?? ''}`),
+        source: 'global-boundary',
+      }),
+    ).catch((diagnosticError: unknown) => {
+      console.warn('Could not record application incident', diagnosticError)
+    })
   }
 
   private handleReload = () => {

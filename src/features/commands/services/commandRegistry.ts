@@ -186,6 +186,16 @@ export const commandRegistry: CommandDefinition[] = [
   },
   {
     category: 'Navigate',
+    description: 'Inspect runtime, persistence, synchronization, and query health.',
+    icon: 'diagnostics',
+    id: 'navigate-diagnostics',
+    keywords: ['health', 'monitoring', 'recovery', 'system'],
+    label: 'Go to system diagnostics',
+    permission: 'diagnostics.view',
+    to: '/diagnostics',
+  },
+  {
+    category: 'Navigate',
     description: 'Manage workspace preferences and platform policy.',
     icon: 'settings',
     id: 'navigate-settings',

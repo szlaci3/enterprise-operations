@@ -10,6 +10,7 @@ import { AppErrorBoundary } from '../../shared/components/AppErrorBoundary'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import { currentSessionUserId } from '../session/currentSession'
 import { ConnectivitySynchronizer } from '../../features/offline/components/ConnectivitySynchronizer'
+import { RuntimeIncidentSynchronizer } from '../../features/diagnostics/components/RuntimeIncidentSynchronizer'
 
 function ThemeSynchronizer({ children }: { children: ReactNode }) {
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
@@ -55,13 +56,15 @@ export function AppProviders() {
 
   return (
     <AppErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ConnectivitySynchronizer>
-          <ThemeSynchronizer>
-            <RouterProvider router={appRouter} />
-          </ThemeSynchronizer>
-        </ConnectivitySynchronizer>
-      </QueryClientProvider>
+      <RuntimeIncidentSynchronizer>
+        <QueryClientProvider client={queryClient}>
+          <ConnectivitySynchronizer>
+            <ThemeSynchronizer>
+              <RouterProvider router={appRouter} />
+            </ThemeSynchronizer>
+          </ConnectivitySynchronizer>
+        </QueryClientProvider>
+      </RuntimeIncidentSynchronizer>
     </AppErrorBoundary>
   )
 }

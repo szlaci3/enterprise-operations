@@ -1,4 +1,5 @@
 import { AlertTriangle, ArrowLeft, Home } from 'lucide-react'
+import { useEffect } from 'react'
 import { Link, isRouteErrorResponse, useRouteError } from 'react-router-dom'
 import { Card } from '../shared/components/Card'
 
@@ -6,6 +7,19 @@ export function RouteErrorPage({ notFound = false }: { notFound?: boolean }) {
   const error = useRouteError()
   const routeNotFound =
     notFound || (isRouteErrorResponse(error) && error.status === 404)
+
+  useEffect(() => {
+    if (routeNotFound || !error) return
+    void import('../features/diagnostics/services/diagnosticsService').then(
+      ({ diagnosticsService }) =>
+        diagnosticsService.recordIncident({
+          error,
+          source: 'route',
+        }),
+    ).catch((diagnosticError: unknown) => {
+      console.warn('Could not record route incident', diagnosticError)
+    })
+  }, [error, routeNotFound])
 
   const title = routeNotFound ? 'Page not found' : 'Unable to load this page'
   const description = routeNotFound

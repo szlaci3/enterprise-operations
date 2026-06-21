@@ -16,6 +16,8 @@ const documentPermissionMigrationKey =
   'enterprise-operations-document-permissions-v1'
 const settingsPermissionMigrationKey =
   'enterprise-operations-settings-permissions-v1'
+const diagnosticsPermissionMigrationKey =
+  'enterprise-operations-diagnostics-permissions-v1'
 
 const permissionCatalog: Permission[] = [
   {
@@ -163,6 +165,18 @@ const permissionCatalog: Permission[] = [
     module: 'Settings',
   },
   {
+    action: 'View',
+    description: 'Inspect runtime, persistence, synchronization, and query health.',
+    key: 'diagnostics.view',
+    module: 'Diagnostics',
+  },
+  {
+    action: 'Manage',
+    description: 'Run safe recovery actions and clear resolved diagnostic history.',
+    key: 'diagnostics.manage',
+    module: 'Diagnostics',
+  },
+  {
     action: 'Manage',
     description: 'Change organization policy and feature rollout controls.',
     key: 'settings.manage',
@@ -209,6 +223,8 @@ const seedRoles: Role[] = [
       'documents.download',
       'settings.view',
       'settings.manage',
+      'diagnostics.view',
+      'diagnostics.manage',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -232,6 +248,7 @@ const seedRoles: Role[] = [
       'documents.view',
       'documents.download',
       'settings.view',
+      'diagnostics.view',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -354,6 +371,22 @@ function readRoles(): Role[] {
         }
       })
       browserStorage.write(settingsPermissionMigrationKey, true)
+    }
+    if (browserStorage.read(diagnosticsPermissionMigrationKey) !== true) {
+      synchronized = synchronized.map((role) => {
+        const seedRole = seedRoles.find((seed) => seed.id === role.id)
+        const diagnosticKeys =
+          seedRole?.permissionKeys.filter((key) =>
+            key.startsWith('diagnostics.'),
+          ) ?? []
+        return {
+          ...role,
+          permissionKeys: [
+            ...new Set([...role.permissionKeys, ...diagnosticKeys]),
+          ],
+        }
+      })
+      browserStorage.write(diagnosticsPermissionMigrationKey, true)
     }
     browserStorage.write(rolesStorageKey, synchronized)
     return synchronized

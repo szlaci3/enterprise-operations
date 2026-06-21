@@ -2437,6 +2437,131 @@ architectural complexity.
 
 ---
 
+# ADR-027
+
+## Title
+
+Sanitized Local Diagnostics with Permission-Separated Recovery Controls
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+The platform had global and route recovery screens, but unexpected errors were
+only written to the developer console. Administrators could not inspect
+persistence availability, synchronization state, query health, or recent
+runtime failures without browser developer tools.
+
+Diagnostics must be useful without copying sensitive business payloads into a
+second store or offering broad destructive reset actions.
+
+---
+
+### Decision
+
+Create a diagnostics domain that derives a validated health snapshot from:
+
+* sanitized runtime incidents
+* browser persistence availability and per-key byte size
+* offline queue pending, retry, and conflict state
+* browser-reported connectivity
+* query-cache and mutation summaries supplied by the diagnostics UI
+
+Capture four incident sources:
+
+* global React error boundary
+* route error boundary
+* unhandled browser errors
+* unhandled promise rejections
+
+Retain at most 100 incidents in browser persistence. Store only bounded error
+name, message, stack, route, source, and timestamp. Do not store component
+props, query data, form values, or business entity payloads.
+
+Extend the shared persistence adapter with a diagnostic write probe and
+metadata-only inspection. Expose enterprise storage key names and byte sizes,
+never values.
+
+Provide a downloadable JSON support bundle containing the health snapshot,
+query summary, and basic browser runtime metadata.
+
+Separate authorization:
+
+* `diagnostics.view` permits health inspection and export
+* `diagnostics.manage` permits recovery actions
+
+Recovery controls are intentionally reversible or secondary-state-only:
+
+* invalidate and refetch queries
+* retry queued offline operations
+* clear retained incident history
+* clear the in-memory query cache and reload
+
+No diagnostic action deletes persisted business records.
+
+Catch diagnostics recording failures and report them only as console warnings
+to prevent telemetry recursion.
+
+---
+
+### Alternatives Considered
+
+#### Persist Complete Application State with Incidents
+
+Rejected because it would duplicate sensitive business data and increase
+storage and privacy risk.
+
+#### Keep Diagnostics in the Browser Console
+
+Rejected because operational administrators need an accessible product
+surface and support export without developer tooling.
+
+#### Add a Reset-All-Data Recovery Action
+
+Rejected because a broad destructive control is unsafe and unnecessary for
+the diagnosed failure modes.
+
+#### Use Audit Records as Runtime Diagnostics
+
+Rejected because audit records represent authoritative business events, while
+runtime failures and infrastructure health are operational telemetry.
+
+#### Add an External Monitoring SDK
+
+Deferred because the project is frontend-only and has no configured telemetry
+backend or privacy policy. The incident contract can later feed an external
+collector.
+
+---
+
+### Consequences
+
+Positive:
+
+* administrators can inspect platform health without developer tools
+* runtime failures survive reload and include recovery context
+* persistence usage is visible without exposing values
+* recovery authority is narrower than diagnostic visibility
+* support bundles are portable and structured
+* telemetry failures cannot recursively destabilize the application
+
+Negative:
+
+* incidents remain local to one browser profile
+* browser connectivity does not prove backend reachability
+* stack traces may be minified in production builds
+* query summaries are point-in-time diagnostics rather than continuous metrics
+* external alerting and centralized retention remain future work
+
+These trade-offs are accepted for a safe production-like operational tooling
+foundation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

@@ -12,6 +12,7 @@ export interface CommandDefinition {
     | 'approval'
     | 'audit'
     | 'department'
+    | 'diagnostics'
     | 'document'
     | 'overview'
     | 'report'

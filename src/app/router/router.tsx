@@ -470,7 +470,31 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'administration',
-        element: <Navigate to="/audit" replace />,
+        element: <Navigate to="/diagnostics" replace />,
+      },
+      {
+        path: 'diagnostics',
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="diagnostics.view" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { DiagnosticsPage } = await import(
+                '../../pages/DiagnosticsPage'
+              )
+              return { Component: DiagnosticsPage }
+            },
+          },
+        ],
       },
       {
         path: 'audit',

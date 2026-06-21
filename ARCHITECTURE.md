@@ -553,6 +553,27 @@ optimistic task projection, reconnect replay, synchronization status, and
 explicit conflict resolution. Initial write coverage is intentionally focused
 on task status transitions, the platform's most frequent operational mutation.
 
+Current diagnostics domain:
+
+```text
+src/
+  features/
+    diagnostics/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    diagnosticsApi.ts
+  pages/
+    DiagnosticsPage.tsx
+```
+
+The diagnostics feature owns sanitized runtime incident capture, health checks,
+browser-persistence inspection, query-runtime presentation, support export, and
+safe recovery controls. It consumes offline health through the offline service
+and storage metadata through the shared persistence adapter.
+
 ---
 
 # app/
@@ -893,10 +914,9 @@ Audit management adds:
 /audit
 ```
 
-The route requires `audit.view`. `/administration` redirects to the audit
-viewer as the first completed administration capability. Approval and task
-detail pages conditionally render entity audit panels for users with the same
-permission.
+The route requires `audit.view`. Approval and task detail pages conditionally
+render entity audit panels for users with the same permission. The broader
+`/administration` entry now redirects to system diagnostics.
 
 Reporting adds:
 
@@ -932,6 +952,16 @@ Settings uses:
 The route requires `settings.view`. Every user with access may update their own
 workspace and notification preferences. Organization policy, feature rollout,
 and administrative change history require `settings.manage`.
+
+Diagnostics adds:
+
+```text
+/diagnostics
+```
+
+The route requires `diagnostics.view`. Query refresh, queued-change retry,
+incident cleanup, and cache-reload controls require `diagnostics.manage`.
+`/administration` redirects to diagnostics as the platform control-plane entry.
 
 Analytics adds:
 
@@ -1315,6 +1345,14 @@ key. Each task operation stores its authoritative base timestamp, optimistic
 aggregate, transition events, retry state, and optional conflicting remote
 aggregate. Queue reads and writes remain independent from task persistence.
 
+The diagnostics mock API persists up to 100 sanitized runtime incidents.
+Incident records contain error name, bounded message, bounded stack, route,
+source, and timestamp. Health snapshots are derived and not persisted.
+
+`browserStorage.diagnose()` performs a temporary write probe and returns only
+enterprise storage key names and byte sizes. It does not expose stored values
+to the diagnostics presentation layer.
+
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
 reach system administrators without overwriting editable custom roles.
@@ -1418,6 +1456,10 @@ identity, optimistic task aggregates, transition events, retry metadata, and
 conflicting remote values. Task lifecycle validation still occurs in the task
 service before an operation is queued.
 
+Diagnostics schemas validate incident sources, bounded runtime records, health
+status, persistence metadata, and complete support snapshots before entering
+the query cache.
+
 ---
 
 # Organization Relationships
@@ -1466,6 +1508,11 @@ The foundation uses two recovery layers:
 * `RouteErrorPage` handles router failures and unknown locations while
   preserving a route back to the overview.
 
+Both recovery layers now record sanitized incidents through a dynamically
+loaded diagnostics service. A global runtime synchronizer also captures
+unhandled browser errors and promise rejections. Diagnostics recording catches
+its own failures so monitoring cannot recursively create incidents.
+
 Expected user and service errors should continue to be handled closer to their
 feature boundary.
 
@@ -1482,6 +1529,7 @@ feature boundary.
 * synchronization of server-like workspace preferences into document-root
   theme and reduced-motion behavior
 * browser connectivity observation and reconnect queue synchronization
+* global unhandled runtime incident observation
 
 Providers should be added here only when their concern is truly application
 wide. Domain-specific providers belong inside their owning feature.
@@ -1635,6 +1683,11 @@ Reusable authorization surfaces:
   recovery experience.
 * `PermissionGate` conditionally exposes actions and administrative controls.
 * `useAuthorization` provides effective permission checks for feature logic.
+
+Diagnostics separates read access from recovery authority:
+
+* `diagnostics.view` exposes health state and support export
+* `diagnostics.manage` exposes cache, retry, and incident-history controls
 
 Future backend integration should not require major architectural changes.
 
