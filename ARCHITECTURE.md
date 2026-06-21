@@ -472,6 +472,29 @@ reusable activity panel. Task and approval detail surfaces provide their typed
 business events to the panel, which merges them with persisted collaboration
 events without duplicating source-domain records.
 
+Current document domain:
+
+```text
+src/
+  features/
+    documents/
+      components/
+      queries/
+      schemas/
+      services/
+  mocks/
+    documentsApi.ts
+  pages/
+    DocumentsPage.tsx
+    DocumentDetailPage.tsx
+    DocumentEditorPage.tsx
+```
+
+The document feature owns controlled metadata, lifecycle, immutable content
+versions, attachment policy, and typed links to operational records. Tasks and
+approvals consume a reusable linked-document panel without embedding document
+content or ownership logic in their aggregates.
+
 ---
 
 # app/
@@ -829,6 +852,18 @@ The route tree requires `reports.view`. Create and edit routes require
 `reports.manage`. CSV export is independently exposed only to users with
 `reports.export`.
 
+Document management adds:
+
+```text
+/documents
+/documents/new
+/documents/:documentId
+```
+
+The route tree requires `documents.view`. Intake, versioning, lifecycle, and
+link management require `documents.manage`; version downloads independently
+require `documents.download`.
+
 Analytics adds:
 
 ```text
@@ -849,7 +884,8 @@ Authorization is enforced at index composition: only entity types backed by a
 permission in the current effective-access snapshot are loaded and returned.
 
 The dashboard, department, user, access, workflow, approval, task,
-notification, audit, reporting, analytics, search, and settings route modules use React Router lazy route loading.
+notification, audit, reporting, analytics, search, document, and settings route
+modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
 
@@ -1040,6 +1076,22 @@ Exact title, title prefix, title containment, description containment, body
 containment, and token prefix matches receive descending score weights.
 Updated timestamps break equal-score ties.
 
+Documents are persisted as complete aggregates containing metadata, links,
+and immutable versions:
+
+```text
+Document metadata
+        + typed task/approval links
+        + append-only content versions
+        -> validated document aggregate
+        -> mock document API
+        -> browser storage
+```
+
+Version creation appends content and attribution without modifying prior
+versions. Links reference operational entity identifiers and are validated
+through source-domain services before persistence.
+
 ---
 
 # Persistence Strategy
@@ -1119,6 +1171,13 @@ live only in TanStack Query caches keyed by period and department segment.
 Search preferences are persisted per user under a dedicated storage key.
 Preferences contain only recent query strings and named saved searches. Source
 documents and search results remain ephemeral.
+
+The document mock API persists complete validated aggregates. Attachment
+content is stored as a data URL to keep the frontend-only simulation
+downloadable and durable. Policy limits each version to 750 KB and each
+document to 3 MB so local browser storage remains bounded. A future backend may
+replace content data URLs with object-storage references without changing the
+document metadata, version, or link contracts.
 
 The access mock synchronizes protected system roles with their code-owned seed
 definitions when roles are read. This ensures newly introduced permission keys
@@ -1206,6 +1265,12 @@ parent relationships, comment lifecycle timestamps, mention identities, and
 form limits. The collaboration service enforces active-user mentions,
 top-level-only reply targets, view and contribution capabilities, and
 author-or-moderator mutation rules before persistence.
+
+Document schemas validate governance metadata, lifecycle values, typed links,
+and immutable version records. The service validates active owners and actors,
+available departments, supported MIME types, attachment size, aggregate
+storage allowance, unique titles, source entity existence, and allowed
+lifecycle transitions before persistence.
 
 ---
 
@@ -1344,6 +1409,10 @@ The reusable collaboration panel is included only in lazy task and approval
 detail chunks. Notification reconciliation dynamically imports collaboration
 records with its other event sources, so the application shell does not load
 discussion persistence or mutation logic.
+
+Document routes are lazy-loaded. Task and approval detail chunks share the
+linked-document panel and query contract; document persistence and cross-domain
+relationship validation load only when those queries execute.
 
 ---
 

@@ -1867,6 +1867,111 @@ foundation.
 
 ---
 
+# ADR-022
+
+## Title
+
+Versioned Document Aggregates with Bounded Browser Attachment Storage
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Operational work needs controlled supporting content with durable metadata,
+version history, attribution, and links to tasks or approvals. Embedding files
+inside source entities would duplicate document rules and make future content
+storage migration difficult.
+
+The application remains frontend-only, so attachment behavior must be useful
+without implying that browser local storage has the capacity or security of an
+enterprise object store.
+
+---
+
+### Decision
+
+Represent each document as a complete aggregate containing:
+
+* ownership, department, classification, retention, and lifecycle metadata
+* typed links to task and approval identifiers
+* an append-only array of immutable content versions
+
+Each version retains its file name, MIME type, size, data URL content,
+SHA-256 identity, author, timestamp, sequence number, and change summary.
+Existing versions are never replaced when new content is uploaded.
+
+Allow PDF, PNG, JPEG, CSV, and plain-text content. Limit each version to 750 KB
+and the accumulated content of one document to 3 MB. These constraints are
+service-enforced and presented in the intake experience.
+
+Keep operational links normalized. Validate each referenced task or approval
+through its owning service before persisting the relationship. Source entities
+do not embed document data.
+
+Use separate `documents.view`, `documents.manage`, and `documents.download`
+permissions. Keep the document route lazy-loaded and expose linked documents
+through one reusable task and approval panel.
+
+---
+
+### Alternatives Considered
+
+#### Store Attachments Directly on Tasks and Approvals
+
+Rejected because versioning, lifecycle, classification, and storage policy
+would be duplicated across source domains.
+
+#### Persist Only Attachment Metadata
+
+Rejected because the frontend simulation would not provide functional
+downloads or demonstrate actual version preservation.
+
+#### Use IndexedDB or an Additional Storage Dependency Immediately
+
+Deferred because bounded data URLs fit the current seeded and demonstration
+scale while preserving a service boundary that can later target IndexedDB or
+backend object storage.
+
+#### Allow Arbitrary File Types and Sizes
+
+Rejected because browser storage is constrained, arbitrary active content is
+unsafe, and a governed platform should make attachment policy explicit.
+
+#### Replace Prior Content When Uploading a Revision
+
+Rejected because it would destroy evidence, attribution, and historical
+traceability.
+
+---
+
+### Consequences
+
+Positive:
+
+* document governance is centralized in one domain
+* prior content and attribution remain available
+* task and approval aggregates stay independent of file storage
+* attachment policy and capacity are explicit
+* permission boundaries distinguish discovery, mutation, and download
+* a future object-storage backend can replace data URLs behind the service
+
+Negative:
+
+* localStorage capacity varies by browser and remains unsuitable for large files
+* base64 data URLs add storage overhead
+* frontend-only permissions do not secure downloaded content from a malicious client
+* cross-domain link validation loads source services in the current simulation
+* document audit projection and full-text indexing are deferred
+
+These trade-offs are accepted for a functional content-management foundation
+with a clear backend migration path.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

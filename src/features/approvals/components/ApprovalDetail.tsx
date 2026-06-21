@@ -22,6 +22,7 @@ import { PageHeader } from '../../../shared/components/PageHeader'
 import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
 import { EntityCollaborationPanel } from '../../collaboration/components/EntityCollaborationPanel'
 import type { CollaborationBusinessEvent } from '../../collaboration/schemas/collaborationSchemas'
+import { EntityDocumentsPanel } from '../../documents/components/EntityDocumentsPanel'
 import { userListOptions } from '../../users/queries/userQueries'
 import { workflowDetailOptions } from '../../workflows/queries/workflowQueries'
 import {
@@ -324,6 +325,10 @@ export function ApprovalDetail() {
         </div>
 
         <div className="space-y-6">
+          <EntityDocumentsPanel
+            entityId={approval.id}
+            entityType="approval"
+          />
           <EntityAuditPanel entityId={approval.id} entityType="approval" />
 
           {canAct ? (

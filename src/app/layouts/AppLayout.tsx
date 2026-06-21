@@ -3,6 +3,7 @@ import {
   Building2,
   CheckSquare2,
   ClipboardList,
+  Files,
   LayoutDashboard,
   LineChart,
   Network,
@@ -36,6 +37,7 @@ const primaryNavigation: NavigationItem[] = [
   { icon: Waypoints, label: 'Workflows', to: '/workflows' },
   { icon: CheckSquare2, label: 'Approvals', to: '/approvals' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },
+  { icon: Files, label: 'Documents', to: '/documents' },
 ]
 
 const secondaryNavigation: NavigationItem[] = [

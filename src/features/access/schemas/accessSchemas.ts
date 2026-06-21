@@ -21,6 +21,9 @@ export const permissionKeySchema = z.enum([
   'collaboration.view',
   'collaboration.contribute',
   'collaboration.moderate',
+  'documents.view',
+  'documents.manage',
+  'documents.download',
 ])
 
 export const permissionSchema = z.object({
@@ -38,6 +41,7 @@ export const permissionSchema = z.object({
     'Tasks',
     'Audit',
     'Collaboration',
+    'Documents',
   ]),
 })
 

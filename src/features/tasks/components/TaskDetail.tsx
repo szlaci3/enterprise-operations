@@ -22,6 +22,7 @@ import { EntityAuditPanel } from '../../audit/components/EntityAuditPanel'
 import { EntityCollaborationPanel } from '../../collaboration/components/EntityCollaborationPanel'
 import type { CollaborationBusinessEvent } from '../../collaboration/schemas/collaborationSchemas'
 import { departmentDetailOptions } from '../../departments/queries/departmentQueries'
+import { EntityDocumentsPanel } from '../../documents/components/EntityDocumentsPanel'
 import { userListOptions } from '../../users/queries/userQueries'
 import {
   taskDetailOptions,
@@ -244,6 +245,7 @@ export function TaskDetail() {
         />
 
         <div className="space-y-6">
+          <EntityDocumentsPanel entityId={task.id} entityType="task" />
           <EntityAuditPanel entityId={task.id} entityType="task" />
 
           {options.length > 0 ? (

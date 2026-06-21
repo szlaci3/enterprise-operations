@@ -399,6 +399,57 @@ export const appRouter = createBrowserRouter([
         ],
       },
       {
+        path: 'documents',
+        lazy: async () => {
+          const { AuthorizationBoundary } = await import(
+            '../../features/access/components/AuthorizationBoundary'
+          )
+          return {
+            Component: () => (
+              <AuthorizationBoundary permission="documents.view" />
+            ),
+          }
+        },
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { DocumentsPage } = await import(
+                '../../pages/DocumentsPage'
+              )
+              return { Component: DocumentsPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { AuthorizationBoundary } = await import(
+                '../../features/access/components/AuthorizationBoundary'
+              )
+              const { DocumentEditorPage } = await import(
+                '../../pages/DocumentEditorPage'
+              )
+              return {
+                Component: () => (
+                  <AuthorizationBoundary permission="documents.manage">
+                    <DocumentEditorPage />
+                  </AuthorizationBoundary>
+                ),
+              }
+            },
+          },
+          {
+            path: ':documentId',
+            lazy: async () => {
+              const { DocumentDetailPage } = await import(
+                '../../pages/DocumentDetailPage'
+              )
+              return { Component: DocumentDetailPage }
+            },
+          },
+        ],
+      },
+      {
         path: 'notifications',
         lazy: async () => {
           const { NotificationsPage } = await import(

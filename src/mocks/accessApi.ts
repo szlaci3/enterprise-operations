@@ -12,6 +12,8 @@ const rolesStorageKey = 'enterprise-operations-roles'
 const assignmentsStorageKey = 'enterprise-operations-role-assignments'
 const collaborationPermissionMigrationKey =
   'enterprise-operations-collaboration-permissions-v1'
+const documentPermissionMigrationKey =
+  'enterprise-operations-document-permissions-v1'
 
 const permissionCatalog: Permission[] = [
   {
@@ -134,6 +136,24 @@ const permissionCatalog: Permission[] = [
     key: 'collaboration.moderate',
     module: 'Collaboration',
   },
+  {
+    action: 'View',
+    description: 'View controlled documents, metadata, links, and versions.',
+    key: 'documents.view',
+    module: 'Documents',
+  },
+  {
+    action: 'Manage',
+    description: 'Create, version, classify, link, and archive documents.',
+    key: 'documents.manage',
+    module: 'Documents',
+  },
+  {
+    action: 'Download',
+    description: 'Download governed document version content.',
+    key: 'documents.download',
+    module: 'Documents',
+  },
 ]
 
 const allPermissionKeys = permissionCatalog.map((permission) => permission.key)
@@ -170,6 +190,9 @@ const seedRoles: Role[] = [
       'tasks.manage',
       'collaboration.view',
       'collaboration.contribute',
+      'documents.view',
+      'documents.manage',
+      'documents.download',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -190,6 +213,8 @@ const seedRoles: Role[] = [
       'tasks.view',
       'collaboration.view',
       'collaboration.contribute',
+      'documents.view',
+      'documents.download',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -206,6 +231,7 @@ const seedRoles: Role[] = [
       'users.view',
       'reports.view',
       'collaboration.view',
+      'documents.view',
     ],
     updatedAt: '2026-06-18T12:00:00.000Z',
   },
@@ -278,6 +304,22 @@ function readRoles(): Role[] {
         }
       })
       browserStorage.write(collaborationPermissionMigrationKey, true)
+    }
+    if (browserStorage.read(documentPermissionMigrationKey) !== true) {
+      synchronized = synchronized.map((role) => {
+        const seedRole = seedRoles.find((seed) => seed.id === role.id)
+        const documentKeys =
+          seedRole?.permissionKeys.filter((key) =>
+            key.startsWith('documents.'),
+          ) ?? []
+        return {
+          ...role,
+          permissionKeys: [
+            ...new Set([...role.permissionKeys, ...documentKeys]),
+          ],
+        }
+      })
+      browserStorage.write(documentPermissionMigrationKey, true)
     }
     browserStorage.write(rolesStorageKey, synchronized)
     return synchronized

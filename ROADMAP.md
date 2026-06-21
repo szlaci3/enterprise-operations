@@ -16,20 +16,19 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 Status: ACTIVE
 
-Active Milestone: M15 — Document Management
+Active Milestone: M16 – Settings Platform
 
 Objective:
 
-Establish controlled document handling with attachments, metadata, version
-history, and links to operational records.
+Consolidate user preferences, organization settings, feature configuration,
+and administrative controls into a governed settings platform.
 
 Success Criteria:
 
-* Documents have durable ownership, classification, and lifecycle metadata
-* New versions preserve immutable prior content and attribution
-* Operational records link to documents without embedding document data
-* Attachment validation and storage constraints are explicit
-* Document access follows typed platform permissions
+* Personal and organization settings have explicit ownership
+* Administrative changes use typed validation and permissions
+* Configuration remains compatible with future backend persistence
+* Settings surfaces are coherent, searchable, and accessible
 
 Previous Phase:
 
@@ -466,9 +465,9 @@ Delivered:
 
 ---
 
-## M15 — Document Management
+## M15 – Document Management
 
-Status: Next
+Status: Completed (June 21, 2026)
 
 Features:
 
@@ -481,11 +480,27 @@ Deliverables:
 
 * Content management foundation
 
+Delivered:
+
+* Persisted document aggregates with durable ownership, department,
+  classification, retention category, and lifecycle metadata
+* Draft, published, and archived lifecycle with guarded transitions
+* Immutable attachment versions retaining file metadata, attribution, change
+  summary, timestamps, content, and SHA-256 identity
+* Explicit PDF, image, CSV, and text attachment allowlist
+* 750 KB per-version and 3 MB per-document browser storage constraints
+* Validated links between documents and task or approval records
+* Reusable linked-document panels on task and approval detail experiences
+* Searchable document library, governed intake, version history, downloads,
+  lifecycle controls, and relationship management
+* Separate view, manage, and download permissions with system-role migration
+* Lazy-loaded document routes and runtime-validated persistence boundaries
+
 ---
 
-## M16 — Settings Platform
+## M16 – Settings Platform
 
-Status: Planned
+Status: Next
 
 Features:
 
