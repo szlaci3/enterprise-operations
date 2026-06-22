@@ -4,15 +4,7 @@ import {
   Building2,
   CheckSquare2,
   ClipboardCheck,
-  FileSearch,
-  FileText,
-  HeartPulse,
-  LayoutDashboard,
-  LineChart,
-  Network,
   Search,
-  Settings,
-  ShieldEllipsis,
   UserRound,
   Waypoints,
   X,
@@ -32,22 +24,11 @@ import { settingsSnapshotOptions } from '../../settings/queries/settingsQueries'
 import { commandSearchOptions } from '../queries/commandQueries'
 import type { CommandDefinition } from '../schemas/commandSchemas'
 import { commandRegistry } from '../services/commandRegistry'
+import { platformIconByKey } from '../../../app/platform/platformIcons'
 
 const iconByKey: Record<CommandDefinition['icon'], LucideIcon> = {
-  analytics: LineChart,
-  approval: CheckSquare2,
-  audit: FileSearch,
-  department: Network,
-  diagnostics: HeartPulse,
-  document: FileText,
-  overview: LayoutDashboard,
-  report: BarChart3,
+  ...platformIconByKey,
   search: Search,
-  security: ShieldEllipsis,
-  settings: Settings,
-  task: ClipboardCheck,
-  user: UserRound,
-  workflow: Waypoints,
 }
 
 interface PaletteItem {

@@ -796,6 +796,30 @@ Use Zustand.
 
 # Routing Architecture
 
+Platform route metadata is code-owned in
+`app/platform/platformRegistry.ts`. Each module definition may declare:
+
+* canonical route, label, icon, keywords, and navigation group
+* required view permission
+* optional feature rollout dependency
+* optional create route and create permission
+
+The application shell derives its primary and platform navigation groups from
+this registry. The command registry derives navigate and create commands from
+the same definitions, preventing route labels, icons, permissions, and feature
+requirements from drifting between entry points.
+
+`PlatformModuleBoundary` resolves a module definition and composes
+`AuthorizationBoundary` with `FeatureAvailabilityBoundary`. Collection and
+detail routes use the view requirement; create and edit pages use the module's
+create permission. This replaces route-specific boundary construction and
+gives department and user routes the same direct-route guarantees as later
+domains.
+
+The registry remains code-owned because its entries represent implemented
+routes and capabilities. Feature configuration controls availability but
+cannot invent routes.
+
 Expected route hierarchy:
 
 ```text
@@ -990,6 +1014,47 @@ notification, audit, reporting, analytics, search, document, and settings route
 modules use React Router lazy route loading.
 Domain code is fetched when its route is visited, keeping the application shell
 and unrelated platform areas out of the feature bundle.
+
+The module boundary is itself lazy-loaded by the router. The sidebar does not
+eagerly import access queries merely to hide navigation items: action and route
+authorization remain authoritative, while the command palette performs
+permission-aware discovery after it is opened. This preserves shell bundle
+ownership established in M19.
+
+---
+
+# Platform Experience Patterns
+
+High-volume collection workspaces share semantic components for:
+
+* loading and retry states
+* empty results
+* summary metrics
+* filter layout
+* search inputs and select filters
+* pressed-state segmented controls
+
+These patterns are presentation and interaction contracts, not data-grid
+abstractions. Domain features continue to own row content, board behavior,
+virtualization, joins, sorting, and business filter semantics.
+
+`useUrlState` stores collection state in React Router search parameters.
+Default values are omitted, changes use replace navigation, and constrained
+values reject unknown URL input. Tasks retain queue, status, query, and
+list/board mode; approvals retain queue, status, and query; users retain
+department, lifecycle, and query; departments retain lifecycle and query.
+
+This makes operational views bookmarkable without duplicating server-like
+collections into Zustand or component-local persistence.
+
+Mobile navigation is treated as a modal dialog on small screens. Opening moves
+focus into the dialog, Tab remains contained, Escape and the backdrop dismiss
+it, background scrolling is disabled, and focus returns to the launcher.
+
+Shared abstractions are introduced only for repeated semantics. Forms,
+timelines, detail sections, tables, and pagination remain feature-owned until
+at least two consumers require the same behavior; visual similarity alone is
+not sufficient.
 
 ---
 

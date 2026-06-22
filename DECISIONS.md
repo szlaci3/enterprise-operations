@@ -2685,6 +2685,132 @@ data loss and because Phase 2 requires durable model evolution.
 
 ---
 
+# ADR-029
+
+## Title
+
+Code-Owned Platform Module Registry and URL-Addressable Collection State
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+After M1–M22, platform metadata was repeated across sidebar arrays, command
+definitions, router boundaries, icon maps, permissions, and feature checks.
+Department and user routes also had weaker direct-route protection than later
+modules.
+
+The task, approval, user, and department directories independently implemented
+loading, error, search, select, tab, summary, and empty-result behavior.
+Their filter state was component-local, so filtered workspaces could not be
+bookmarked, shared, or restored through browser navigation.
+
+Moving every list into a generic data-grid or every platform concern into one
+large configuration object would erase useful domain differences and risk
+pulling feature code into the application shell.
+
+---
+
+### Decision
+
+Create a typed code-owned platform module registry containing only stable
+cross-platform metadata:
+
+* module key, canonical route, label, icon, navigation group, and keywords
+* optional feature rollout key
+* optional view permission
+* optional create route, label, keywords, and permission
+
+Derive sidebar entries and command-palette navigate/create commands from this
+registry. Keep icons in one platform icon vocabulary.
+
+Introduce `PlatformModuleBoundary` to compose authorization and feature
+availability using registry metadata. Lazy-load the boundary from route
+definitions so access and settings implementation details do not become eager
+router dependencies.
+
+Do not eagerly query effective access from the application shell solely to
+hide sidebar items. Direct routes and management actions remain protected, and
+the command palette remains permission-aware when opened. This preserves the
+M19 bundle boundary.
+
+Create small semantic collection primitives for loading, retry, empty results,
+summary metrics, filters, search, select controls, and segmented controls.
+Features retain ownership of rows, tables, boards, virtualization, joins, and
+business filtering.
+
+Store collection interaction state in URL search parameters through a typed
+`useUrlState` hook. Omit defaults and use replace navigation. Do not copy
+server-like collections into URL state or Zustand.
+
+---
+
+### Alternatives Considered
+
+#### Keep Navigation, Commands, and Routes Independently Defined
+
+Rejected because adding a module required synchronized edits across unrelated
+files and allowed permissions or feature requirements to drift.
+
+#### Generate the React Router Tree Entirely from the Registry
+
+Rejected because route-level lazy imports and domain-specific nested pages are
+implementation details that do not belong in platform metadata.
+
+#### Permission-Filter Sidebar Items with an Eager Access Query
+
+Rejected because it increased the always-loaded application entry bundle.
+Route and action boundaries provide the authoritative control.
+
+#### Adopt a Full Data-Grid Abstraction
+
+Rejected because tasks have list and board views, users use fixed-row
+virtualization, and department and approval records have different semantics.
+A shared grid would add indirection without a shared behavioral requirement.
+
+#### Keep Filters in Component State
+
+Rejected because refresh, bookmarking, sharing, and browser history would lose
+the user's operational context.
+
+#### Persist Filters in Zustand
+
+Rejected because URL state is the canonical representation for navigable view
+context and avoids a second synchronization path.
+
+---
+
+### Consequences
+
+Positive:
+
+* module discovery metadata has one typed source
+* navigation and commands stay aligned as the platform grows
+* direct-route authorization is consistent across core domains
+* feature availability composes uniformly with permissions
+* filtered collection views are bookmarkable and shareable
+* repeated accessibility and recovery behavior is centralized
+* domain-specific rendering and query ownership remain intact
+* the shell avoids an eager RBAC dependency
+
+Negative:
+
+* route lazy imports still require explicit router entries
+* sidebar links may remain visible to users who cannot enter the route
+* registry create metadata currently models one primary create action
+* URL changes occur while users type, although replace navigation avoids
+  history pollution
+* additional shared primitives require demonstrated semantic reuse
+
+These trade-offs are accepted for platform consistency without introducing a
+monolithic configuration or data-grid layer.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

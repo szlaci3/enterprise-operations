@@ -6,13 +6,23 @@ import {
   LayoutGrid,
   List,
   Plus,
-  Search,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { currentSessionUserId } from '../../../app/session/currentSession'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
+import {
+  CollectionEmpty,
+  CollectionError,
+  CollectionLoading,
+  FilterBar,
+  SearchField,
+  SegmentedControl,
+  SelectFilter,
+} from '../../../shared/components/CollectionWorkspace'
+import { SummaryGrid } from '../../../shared/components/SummaryGrid'
+import { useUrlState } from '../../../shared/hooks/useUrlState'
 import { PermissionGate } from '../../access/components/PermissionGate'
 import { departmentListOptions } from '../../departments/queries/departmentQueries'
 import { userListOptions } from '../../users/queries/userQueries'
@@ -22,6 +32,19 @@ import { TaskPriorityBadge, TaskStatusBadge } from './TaskBadges'
 
 type QueueFilter = 'mine' | 'department' | 'all'
 type ViewMode = 'list' | 'board'
+const queueOptions = [
+  { label: 'My work', value: 'mine' },
+  { label: 'My department', value: 'department' },
+  { label: 'All tasks', value: 'all' },
+] as const
+const taskStatuses = [
+  'all',
+  'backlog',
+  'in-progress',
+  'blocked',
+  'completed',
+  'cancelled',
+] as const
 const boardStatuses: TaskStatus[] = [
   'backlog',
   'in-progress',
@@ -78,10 +101,25 @@ export function TaskList() {
   const usersQuery = useQuery(userListOptions())
   const departmentsQuery = useQuery(departmentListOptions())
   const [currentTime] = useState(() => Date.now())
-  const [queue, setQueue] = useState<QueueFilter>('mine')
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<TaskStatus | 'all'>('all')
-  const [view, setView] = useState<ViewMode>('list')
+  const [queue, setQueue] = useUrlState<QueueFilter>({
+    defaultValue: 'mine',
+    key: 'queue',
+    values: ['mine', 'department', 'all'],
+  })
+  const [search, setSearch] = useUrlState<string>({
+    defaultValue: '',
+    key: 'q',
+  })
+  const [status, setStatus] = useUrlState<TaskStatus | 'all'>({
+    defaultValue: 'all',
+    key: 'status',
+    values: taskStatuses,
+  })
+  const [view, setView] = useUrlState<ViewMode>({
+    defaultValue: 'list',
+    key: 'view',
+    values: ['list', 'board'],
+  })
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data])
   const users = usersQuery.data ?? []
   const departments = departmentsQuery.data ?? []
@@ -121,29 +159,19 @@ export function TaskList() {
     usersQuery.isPending ||
     departmentsQuery.isPending
   ) {
-    return (
-      <Card className="h-96 animate-pulse bg-slate-100 dark:bg-slate-800">
-        <span className="sr-only">Loading operational tasks</span>
-      </Card>
-    )
+    return <CollectionLoading label="Loading operational tasks" />
   }
 
   if (tasksQuery.isError || usersQuery.isError || departmentsQuery.isError) {
     return (
-      <Card className="p-8 text-center">
-        <h1 className="text-xl font-semibold">Tasks could not be loaded</h1>
-        <button
-          className="mt-5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-          onClick={() => {
+      <CollectionError
+        onRetry={() => {
             tasksQuery.refetch()
             usersQuery.refetch()
             departmentsQuery.refetch()
-          }}
-          type="button"
-        >
-          Retry
-        </button>
-      </Card>
+        }}
+        title="Tasks could not be loaded"
+      />
     )
   }
 
@@ -178,52 +206,33 @@ export function TaskList() {
         title="Task management"
       />
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            My open work
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{myTasks.length}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            My overdue work
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-red-600">
-            {overdueCount}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Completed tasks
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{completedCount}</p>
-        </Card>
-      </section>
+      <SummaryGrid
+        ariaLabel="Task summary"
+        metrics={[
+          { label: 'My open work', value: myTasks.length },
+          { label: 'My overdue work', tone: 'danger', value: overdueCount },
+          { label: 'Completed tasks', value: completedCount },
+        ]}
+      />
 
       <Card className="overflow-hidden">
-        <div className="border-b border-slate-200 p-4 dark:border-slate-800">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
-              {(['mine', 'department', 'all'] as const).map((value) => (
-                <button
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-                    queue === value
-                      ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-200'
-                      : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                  key={value}
-                  onClick={() => setQueue(value)}
-                  type="button"
-                >
-                  {value === 'mine'
-                    ? 'My work'
-                    : value === 'department'
-                      ? 'My department'
-                      : 'All tasks'}
-                </button>
-              ))}
-            </div>
+        <FilterBar
+          primary={
+            <SearchField
+              label="Search tasks"
+              onChange={setSearch}
+              placeholder="Search task title or description"
+              value={search}
+            />
+          }
+          secondary={
+            <>
+              <SegmentedControl
+                ariaLabel="Task queue"
+                onChange={setQueue}
+                options={queueOptions}
+                value={queue}
+              />
             <div className="flex rounded-lg border border-slate-200 p-1 dark:border-slate-700">
               <button
                 aria-label="List view"
@@ -242,58 +251,30 @@ export function TaskList() {
                 <LayoutGrid aria-hidden="true" className="size-4" />
               </button>
             </div>
-          </div>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <label className="relative flex-1">
-              <span className="sr-only">Search tasks</span>
-              <Search
-                aria-hidden="true"
-                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search task title or description"
-                type="search"
-                value={search}
-              />
-            </label>
-            <select
-              aria-label="Filter task status"
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-              onChange={(event) => {
-                const value = event.target.value
-                if (
-                  value === 'all' ||
-                  value === 'backlog' ||
-                  value === 'in-progress' ||
-                  value === 'blocked' ||
-                  value === 'completed' ||
-                  value === 'cancelled'
-                ) {
-                  setStatus(value)
-                }
-              }}
-              value={status}
-            >
+            </>
+          }
+        >
+          <SelectFilter
+            label="Filter task status"
+            onChange={(event) =>
+              setStatus(event.target.value as TaskStatus | 'all')
+            }
+            value={status}
+          >
               <option value="all">All statuses</option>
               <option value="backlog">Backlog</option>
               <option value="in-progress">In progress</option>
               <option value="blocked">Blocked</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
+          </SelectFilter>
+        </FilterBar>
 
         {filteredTasks.length === 0 ? (
-          <div className="p-10 text-center">
-            <CheckCircle2
-              aria-hidden="true"
-              className="mx-auto size-9 text-slate-300"
-            />
-            <p className="mt-3 font-semibold">No tasks match this queue</p>
-          </div>
+          <CollectionEmpty
+            icon={<CheckCircle2 aria-hidden="true" className="size-9" />}
+            title="No tasks match this queue"
+          />
         ) : view === 'list' ? (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredTasks.map((task) => {

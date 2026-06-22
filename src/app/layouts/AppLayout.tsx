@@ -1,29 +1,20 @@
 import {
-  BarChart3,
   Building2,
-  CheckSquare2,
-  ClipboardList,
-  Files,
-  HeartPulse,
-  LayoutDashboard,
-  LineChart,
-  Network,
   Menu,
-  Settings,
-  ScrollText,
-  ShieldEllipsis,
-  UsersRound,
-  Waypoints,
-  type LucideIcon,
   X,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
 import { useUiStore } from '../../store/uiStore'
 import { currentSessionUserId } from '../session/currentSession'
+import { platformIconByKey } from '../platform/platformIcons'
+import {
+  platformModules,
+  type PlatformModuleDefinition,
+} from '../platform/platformRegistry'
 
 const CommandLauncher = lazy(async () => {
   const module = await import(
@@ -44,43 +35,9 @@ const SyncStatus = lazy(async () => {
   return { default: module.SyncStatus }
 })
 
-interface NavigationItem {
-  feature?: FeatureKey
-  icon: LucideIcon
-  label: string
-  to: string
-}
-
-const primaryNavigation: NavigationItem[] = [
-  { icon: LayoutDashboard, label: 'Overview', to: '/overview' },
-  {
-    feature: 'analytics',
-    icon: LineChart,
-    label: 'Analytics',
-    to: '/analytics',
-  },
-  { icon: ClipboardList, label: 'Tasks', to: '/tasks' },
-  { icon: Waypoints, label: 'Workflows', to: '/workflows' },
-  { icon: CheckSquare2, label: 'Approvals', to: '/approvals' },
-  { icon: BarChart3, label: 'Reports', to: '/reports' },
-  {
-    feature: 'documents',
-    icon: Files,
-    label: 'Documents',
-    to: '/documents',
-  },
-]
-
-const secondaryNavigation: NavigationItem[] = [
-  { icon: Network, label: 'Departments', to: '/departments' },
-  { icon: UsersRound, label: 'Users', to: '/users' },
-  { icon: ShieldEllipsis, label: 'Access control', to: '/access' },
-  { icon: ScrollText, label: 'Audit trail', to: '/audit' },
-  { icon: HeartPulse, label: 'System health', to: '/diagnostics' },
-  { icon: Settings, label: 'Settings', to: '/settings' },
-]
-
-function NavigationLink({ icon: Icon, label, to }: NavigationItem) {
+function NavigationLink({ module }: { module: PlatformModuleDefinition }) {
+  const { icon, label, route } = module
+  const Icon = platformIconByKey[icon]
   return (
     <NavLink
       className={({ isActive }) =>
@@ -90,7 +47,7 @@ function NavigationLink({ icon: Icon, label, to }: NavigationItem) {
             : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
         }`
       }
-      to={to}
+      to={route}
     >
       <Icon aria-hidden="true" className="size-4.5 shrink-0" />
       {label}
@@ -99,10 +56,10 @@ function NavigationLink({ icon: Icon, label, to }: NavigationItem) {
 }
 
 function SidebarContent({
-  featureIsVisible,
+  moduleIsVisible,
   organizationName,
 }: {
-  featureIsVisible: (feature?: FeatureKey) => boolean
+  moduleIsVisible: (module: PlatformModuleDefinition) => boolean
   organizationName: string
 }) {
   return (
@@ -126,10 +83,11 @@ function SidebarContent({
         className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-5"
       >
         <div className="space-y-1">
-          {primaryNavigation
-            .filter((item) => featureIsVisible(item.feature))
+          {platformModules
+            .filter((item) => item.navigationGroup === 'primary')
+            .filter(moduleIsVisible)
             .map((item) => (
-              <NavigationLink key={item.to} {...item} />
+              <NavigationLink key={item.route} module={item} />
             ))}
         </div>
         <div>
@@ -137,9 +95,12 @@ function SidebarContent({
             Platform
           </p>
           <div className="space-y-1">
-            {secondaryNavigation.map((item) => (
-              <NavigationLink key={item.to} {...item} />
-            ))}
+            {platformModules
+              .filter((item) => item.navigationGroup === 'platform')
+              .filter(moduleIsVisible)
+              .map((item) => (
+                <NavigationLink key={item.route} module={item} />
+              ))}
           </div>
         </div>
       </nav>
@@ -165,6 +126,9 @@ function SidebarContent({
 
 export function AppLayout() {
   const location = useLocation()
+  const mobileDialogRef = useRef<HTMLElement>(null)
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
+  const wasMobileNavigationOpen = useRef(false)
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
   const isMobileNavigationOpen = useUiStore(
     (state) => state.isMobileNavigationOpen,
@@ -182,6 +146,8 @@ export function AppLayout() {
     !feature ||
     settingsQuery.data?.features.find((item) => item.key === feature)?.state !==
       'disabled'
+  const moduleIsVisible = (module: PlatformModuleDefinition) =>
+    featureIsVisible(module.feature)
 
   useEffect(() => {
     closeMobileNavigation()
@@ -189,17 +155,43 @@ export function AppLayout() {
 
   useEffect(() => {
     if (!isMobileNavigationOpen) {
+      if (wasMobileNavigationOpen.current) {
+        mobileMenuButtonRef.current?.focus()
+      }
+      wasMobileNavigationOpen.current = false
       return
     }
+
+    wasMobileNavigationOpen.current = true
+    const dialog = mobileDialogRef.current
+    const focusable = dialog?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+    focusable?.[0]?.focus()
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         closeMobileNavigation()
       }
+      if (event.key === 'Tab' && focusable && focusable.length > 0) {
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
     }
 
     document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
+    }
   }, [closeMobileNavigation, isMobileNavigationOpen])
 
   return (
@@ -213,7 +205,7 @@ export function AppLayout() {
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:block">
         <SidebarContent
-          featureIsVisible={featureIsVisible}
+          moduleIsVisible={moduleIsVisible}
           organizationName={organizationName}
         />
       </aside>
@@ -228,7 +220,10 @@ export function AppLayout() {
           />
           <aside
             aria-label="Mobile navigation"
+            aria-modal="true"
             className="relative h-full w-72 bg-white shadow-xl dark:bg-slate-900"
+            ref={mobileDialogRef}
+            role="dialog"
           >
             <button
               aria-label="Close navigation"
@@ -239,7 +234,7 @@ export function AppLayout() {
               <X aria-hidden="true" className="size-5" />
             </button>
             <SidebarContent
-              featureIsVisible={featureIsVisible}
+              moduleIsVisible={moduleIsVisible}
               organizationName={organizationName}
             />
           </aside>
@@ -256,6 +251,7 @@ export function AppLayout() {
             aria-label="Open navigation"
             className="rounded-md p-2 lg:hidden"
             onClick={toggleMobileNavigation}
+            ref={mobileMenuButtonRef}
             type="button"
           >
             <Menu aria-hidden="true" className="size-5" />

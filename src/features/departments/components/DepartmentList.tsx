@@ -3,23 +3,40 @@ import {
   Building2,
   ChevronRight,
   Plus,
-  Search,
   Users,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
 import { departmentListOptions } from '../queries/departmentQueries'
 import type { DepartmentStatus } from '../schemas/departmentSchemas'
 import { DepartmentStatusBadge } from './DepartmentStatusBadge'
+import {
+  CollectionEmpty,
+  CollectionError,
+  CollectionLoading,
+  FilterBar,
+  SearchField,
+  SelectFilter,
+} from '../../../shared/components/CollectionWorkspace'
+import { SummaryGrid } from '../../../shared/components/SummaryGrid'
+import { useUrlState } from '../../../shared/hooks/useUrlState'
+import { PermissionGate } from '../../access/components/PermissionGate'
 
 type StatusFilter = DepartmentStatus | 'all'
 
 export function DepartmentList() {
   const departmentsQuery = useQuery(departmentListOptions())
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<StatusFilter>('all')
+  const [search, setSearch] = useUrlState<string>({
+    defaultValue: '',
+    key: 'q',
+  })
+  const [status, setStatus] = useUrlState<StatusFilter>({
+    defaultValue: 'all',
+    key: 'status',
+    values: ['all', 'active', 'planned', 'inactive'],
+  })
 
   const departments = useMemo(
     () => departmentsQuery.data ?? [],
@@ -45,33 +62,16 @@ export function DepartmentList() {
   }, [departments, search, status])
 
   if (departmentsQuery.isPending) {
-    return (
-      <div className="space-y-5">
-        <div className="h-20 max-w-xl animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
-        <Card className="h-96 animate-pulse bg-slate-100 dark:bg-slate-800">
-          <span className="sr-only">Loading departments</span>
-        </Card>
-      </div>
-    )
+    return <CollectionLoading label="Loading departments" />
   }
 
   if (departmentsQuery.isError) {
     return (
-      <Card className="p-8 text-center">
-        <h1 className="text-xl font-semibold text-slate-950 dark:text-white">
-          Departments could not be loaded
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Refresh the collection to try the request again.
-        </p>
-        <button
-          className="mt-5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-          onClick={() => departmentsQuery.refetch()}
-          type="button"
-        >
-          Retry
-        </button>
-      </Card>
+      <CollectionError
+        description="Refresh the collection to try the request again."
+        onRetry={() => departmentsQuery.refetch()}
+        title="Departments could not be loaded"
+      />
     )
   }
 
@@ -87,103 +87,61 @@ export function DepartmentList() {
     <div className="space-y-6">
       <PageHeader
         actions={
-          <Link
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
-            to="/departments/new"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            New department
-          </Link>
+          <PermissionGate permission="departments.manage">
+            <Link
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+              to="/departments/new"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              New department
+            </Link>
+          </PermissionGate>
         }
         description="Manage organizational ownership, reporting alignment, and the departments responsible for enterprise outcomes."
         eyebrow="Organization"
         title="Departments"
       />
 
-      <section
-        aria-label="Department summary"
-        className="grid gap-4 sm:grid-cols-3"
-      >
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Departments
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {departments.length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Active departments
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {activeCount}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Managed headcount
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {totalHeadcount.toLocaleString()}
-          </p>
-        </Card>
-      </section>
+      <SummaryGrid
+        ariaLabel="Department summary"
+        metrics={[
+          { label: 'Departments', value: departments.length },
+          { label: 'Active departments', value: activeCount },
+          { label: 'Managed headcount', value: totalHeadcount.toLocaleString() },
+        ]}
+      />
 
       <Card className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-slate-800 sm:flex-row">
-          <label className="relative flex-1">
-            <span className="sr-only">Search departments</span>
-            <Search
-              aria-hidden="true"
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-brand-950"
-              onChange={(event) => setSearch(event.target.value)}
+        <FilterBar
+          primary={
+            <SearchField
+              label="Search departments"
+              onChange={setSearch}
               placeholder="Search by department, code, owner, or cost center"
-              type="search"
               value={search}
             />
-          </label>
-          <label>
-            <span className="sr-only">Filter by status</span>
-            <select
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-brand-950"
-              onChange={(event) => {
-                const value = event.target.value
-                if (
-                  value === 'all' ||
-                  value === 'active' ||
-                  value === 'planned' ||
-                  value === 'inactive'
-                ) {
-                  setStatus(value)
-                }
-              }}
-              value={status}
-            >
+          }
+        >
+          <SelectFilter
+            label="Filter by status"
+            onChange={(event) =>
+              setStatus(event.target.value as StatusFilter)
+            }
+            value={status}
+          >
               <option value="all">All statuses</option>
               <option value="active">Active</option>
               <option value="planned">Planned</option>
               <option value="inactive">Inactive</option>
-            </select>
-          </label>
-        </div>
+          </SelectFilter>
+        </FilterBar>
 
         {filteredDepartments.length === 0 ? (
-          <div className="p-10 text-center">
-            <Building2
-              aria-hidden="true"
-              className="mx-auto size-8 text-slate-300"
-            />
-            <p className="mt-3 font-semibold text-slate-900 dark:text-white">
-              No departments match these filters
-            </p>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Adjust the search or lifecycle status to see more results.
-            </p>
-          </div>
+          <CollectionEmpty
+            description="Adjust the search or lifecycle status to see more results."
+            icon={<Building2 aria-hidden="true" className="size-8" />}
+            title="No departments match these filters"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-200 text-left text-sm">

@@ -83,7 +83,7 @@ platform foundations required to support it.
 
 Status: ACTIVE
 
-Active Milestone: M22 – Platform Experience System
+Active Milestone: M23 – Tenant and Workspace Boundaries
 
 Objective:
 
@@ -761,38 +761,58 @@ Delivered:
 
 ## M22 – Platform Experience System
 
-Status: Active
+Status: Completed (June 22, 2026)
 
 Objective:
 
 Establish shared, accessible patterns for dense enterprise workspaces before
 adding more operational domains.
 
-Planned Scope:
+Delivered:
 
-* Shared field, filter bar, empty state, data table, pagination, timeline,
-  detail section, and destructive-confirmation patterns
-* A typed module registry shared by navigation, commands, feature availability,
-  and route metadata
-* Consistent permission and feature boundaries on all management routes
-* URL-addressable list state and predictable loading, empty, error, and refresh
-  behavior
-* Keyboard and focus contracts for overlays, mobile navigation, tables, and
-  management actions
+* Typed code-owned platform module registry containing canonical route, label,
+  icon, navigation group, search keywords, feature dependency, view permission,
+  and optional create action
+* Sidebar navigation and command-palette commands derived from the same module
+  definitions
+* Shared platform icon vocabulary used by shell navigation and commands
+* Reusable module boundary composing route authorization and feature
+  availability from registry metadata
+* Consistent view and management boundaries across overview, analytics, tasks,
+  departments, users, access, workflows, approvals, reports, documents, audit,
+  diagnostics, and settings routes
+* Direct-route protection for department, user, workflow, task, report, and
+  document create/edit pages
+* Permission-aware department and user management actions in list and detail
+  experiences
+* Shared collection loading, retry, empty-state, filter-bar, search-field,
+  select-filter, segmented-control, and summary-metric patterns
+* Task, approval, user, and department workspaces migrated to the shared
+  collection patterns
+* URL-addressable search, queue, status, department, and view-mode state using
+  replace navigation so filtered workspaces can be bookmarked and shared
+* Accessible pressed-state semantics for queue controls and live status
+  semantics for empty and error states
+* Mobile navigation dialog semantics, initial focus, focus trapping, Escape
+  dismissal, scroll containment, and focus restoration
+* Route and collection consolidation removed substantially more duplicated code
+  than it introduced
 
-Exit Criteria:
+Deferred Deliberately:
 
-* Existing high-traffic task, approval, user, and department surfaces use the
-  shared patterns
-* Adding a module no longer requires duplicating platform metadata in several
-  unrelated files
-* Direct-route authorization behavior is consistent across domains
+* Generic form-field, timeline, detail-section, table, and pagination wrappers
+  will be introduced only when multiple consumers share the same semantic
+  behavior; current domain-specific implementations remain clearer than a
+  styling-only abstraction
+* Sidebar items remain feature-aware but are not permission-filtered at startup,
+  avoiding an eager access-domain dependency in the application shell; direct
+  routes and actions remain protected, and command discovery is permission-aware
 
 ---
 
 ## M23 – Tenant and Workspace Boundaries
 
-Status: Planned
+Status: Active
 
 Objective:
 

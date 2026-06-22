@@ -4,13 +4,23 @@ import {
   ChevronRight,
   Clock3,
   Plus,
-  Search,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { currentSessionUserId } from '../../../app/session/currentSession'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
+import {
+  CollectionEmpty,
+  CollectionError,
+  CollectionLoading,
+  FilterBar,
+  SearchField,
+  SegmentedControl,
+  SelectFilter,
+} from '../../../shared/components/CollectionWorkspace'
+import { SummaryGrid } from '../../../shared/components/SummaryGrid'
+import { useUrlState } from '../../../shared/hooks/useUrlState'
 import { userListOptions } from '../../users/queries/userQueries'
 import { approvalListOptions } from '../queries/approvalQueries'
 import type { ApprovalStatus } from '../schemas/approvalSchemas'
@@ -21,13 +31,29 @@ import {
 
 type QueueFilter = 'assigned' | 'submitted' | 'all'
 type StatusFilter = ApprovalStatus | 'all'
+const queueOptions = [
+  { label: 'Assigned to me', value: 'assigned' },
+  { label: 'Submitted by me', value: 'submitted' },
+  { label: 'All requests', value: 'all' },
+] as const
 
 export function ApprovalList() {
   const approvalsQuery = useQuery(approvalListOptions())
   const usersQuery = useQuery(userListOptions())
-  const [queue, setQueue] = useState<QueueFilter>('assigned')
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<StatusFilter>('all')
+  const [queue, setQueue] = useUrlState<QueueFilter>({
+    defaultValue: 'assigned',
+    key: 'queue',
+    values: ['assigned', 'submitted', 'all'],
+  })
+  const [search, setSearch] = useUrlState<string>({
+    defaultValue: '',
+    key: 'q',
+  })
+  const [status, setStatus] = useUrlState<StatusFilter>({
+    defaultValue: 'all',
+    key: 'status',
+    values: ['all', 'pending', 'approved', 'rejected'],
+  })
   const [currentTime] = useState(() => Date.now())
   const approvals = useMemo(
     () => approvalsQuery.data ?? [],
@@ -64,28 +90,18 @@ export function ApprovalList() {
   }, [approvals, queue, search, status])
 
   if (approvalsQuery.isPending || usersQuery.isPending) {
-    return (
-      <Card className="h-96 animate-pulse bg-slate-100 dark:bg-slate-800">
-        <span className="sr-only">Loading approvals</span>
-      </Card>
-    )
+    return <CollectionLoading label="Loading approvals" />
   }
 
   if (approvalsQuery.isError || usersQuery.isError) {
     return (
-      <Card className="p-8 text-center">
-        <h1 className="text-xl font-semibold">Approvals could not be loaded</h1>
-        <button
-          className="mt-5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-          onClick={() => {
+      <CollectionError
+        onRetry={() => {
             approvalsQuery.refetch()
             usersQuery.refetch()
-          }}
-          type="button"
-        >
-          Retry
-        </button>
-      </Card>
+        }}
+        title="Approvals could not be loaded"
+      />
     )
   }
 
@@ -122,101 +138,58 @@ export function ApprovalList() {
         title="Approvals"
       />
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Assigned to you
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{assignedCount}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">Overdue</p>
-          <p className="mt-2 text-2xl font-semibold text-red-600">
-            {overdueCount}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Open requests
-          </p>
-          <p className="mt-2 text-2xl font-semibold">
-            {approvals.filter((approval) => approval.status === 'pending').length}
-          </p>
-        </Card>
-      </section>
+      <SummaryGrid
+        ariaLabel="Approval summary"
+        metrics={[
+          { label: 'Assigned to you', value: assignedCount },
+          { label: 'Overdue', tone: 'danger', value: overdueCount },
+          {
+            label: 'Open requests',
+            value: approvals.filter((approval) => approval.status === 'pending')
+              .length,
+          },
+        ]}
+      />
 
       <Card className="overflow-hidden">
-        <div className="border-b border-slate-200 p-4 dark:border-slate-800">
-          <div className="flex flex-wrap gap-2">
-            {(['assigned', 'submitted', 'all'] as const).map((value) => (
-              <button
-                className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-                  queue === value
-                    ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-200'
-                    : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-                key={value}
-                onClick={() => setQueue(value)}
-                type="button"
-              >
-                {value === 'assigned'
-                  ? 'Assigned to me'
-                  : value === 'submitted'
-                    ? 'Submitted by me'
-                    : 'All requests'}
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <label className="relative flex-1">
-              <span className="sr-only">Search approval requests</span>
-              <Search
-                aria-hidden="true"
-                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search title, purpose, or workflow"
-                type="search"
-                value={search}
-              />
-            </label>
-            <select
-              aria-label="Filter approval status"
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-              onChange={(event) => {
-                const value = event.target.value
-                if (
-                  value === 'all' ||
-                  value === 'pending' ||
-                  value === 'approved' ||
-                  value === 'rejected'
-                ) {
-                  setStatus(value)
-                }
-              }}
-              value={status}
-            >
+        <FilterBar
+          primary={
+            <SearchField
+              label="Search approval requests"
+              onChange={setSearch}
+              placeholder="Search title, purpose, or workflow"
+              value={search}
+            />
+          }
+          secondary={
+            <SegmentedControl
+              ariaLabel="Approval queue"
+              onChange={setQueue}
+              options={queueOptions}
+              value={queue}
+            />
+          }
+        >
+          <SelectFilter
+            label="Filter approval status"
+            onChange={(event) =>
+              setStatus(event.target.value as StatusFilter)
+            }
+            value={status}
+          >
               <option value="all">All statuses</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
+          </SelectFilter>
+        </FilterBar>
 
         {filteredApprovals.length === 0 ? (
-          <div className="p-10 text-center">
-            <CheckSquare2
-              aria-hidden="true"
-              className="mx-auto size-9 text-slate-300"
-            />
-            <p className="mt-3 font-semibold">No approval requests found</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Change the queue or filters to see more requests.
-            </p>
-          </div>
+          <CollectionEmpty
+            description="Change the queue or filters to see more requests."
+            icon={<CheckSquare2 aria-hidden="true" className="size-9" />}
+            title="No approval requests found"
+          />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredApprovals.map((approval) => {

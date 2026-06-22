@@ -20,6 +20,7 @@ import {
 import { userListOptions } from '../../users/queries/userQueries'
 import { DepartmentServiceError } from '../services/departmentService'
 import { DepartmentStatusBadge } from './DepartmentStatusBadge'
+import { PermissionGate } from '../../access/components/PermissionGate'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-US', {
@@ -124,13 +125,15 @@ export function DepartmentDetail() {
               {department.description}
             </p>
           </div>
-          <Link
-            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            to={`/departments/${department.id}/edit`}
-          >
-            <Edit3 aria-hidden="true" className="size-4" />
-            Edit department
-          </Link>
+          <PermissionGate permission="departments.manage">
+            <Link
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              to={`/departments/${department.id}/edit`}
+            >
+              <Edit3 aria-hidden="true" className="size-4" />
+              Edit department
+            </Link>
+          </PermissionGate>
         </div>
       </div>
 

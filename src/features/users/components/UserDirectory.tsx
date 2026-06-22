@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, Plus, Search, UserRound, Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronRight, Plus, UserRound, Users } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { departmentListOptions } from '../../departments/queries/departmentQueries'
 import { Card } from '../../../shared/components/Card'
@@ -10,15 +10,36 @@ import type { UserStatus } from '../schemas/userSchemas'
 import { UserAvatar } from './UserAvatar'
 import { UserStatusBadge } from './UserStatusBadge'
 import { useVirtualRows } from '../../../shared/hooks/useVirtualRows'
+import {
+  CollectionEmpty,
+  CollectionError,
+  CollectionLoading,
+  FilterBar,
+  SearchField,
+  SelectFilter,
+} from '../../../shared/components/CollectionWorkspace'
+import { SummaryGrid } from '../../../shared/components/SummaryGrid'
+import { useUrlState } from '../../../shared/hooks/useUrlState'
+import { PermissionGate } from '../../access/components/PermissionGate'
 
 type StatusFilter = UserStatus | 'all'
 
 export function UserDirectory() {
   const usersQuery = useQuery(userListOptions())
   const departmentsQuery = useQuery(departmentListOptions())
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<StatusFilter>('all')
-  const [departmentId, setDepartmentId] = useState('all')
+  const [search, setSearch] = useUrlState<string>({
+    defaultValue: '',
+    key: 'q',
+  })
+  const [status, setStatus] = useUrlState<StatusFilter>({
+    defaultValue: 'all',
+    key: 'status',
+    values: ['all', 'active', 'invited', 'suspended', 'deactivated'],
+  })
+  const [departmentId, setDepartmentId] = useUrlState<string>({
+    defaultValue: 'all',
+    key: 'department',
+  })
 
   const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
   const departments = useMemo(
@@ -61,23 +82,19 @@ export function UserDirectory() {
   )
 
   if (usersQuery.isPending || departmentsQuery.isPending) {
-    return (
-      <Card className="h-120 animate-pulse bg-slate-100 dark:bg-slate-800">
-        <span className="sr-only">Loading user directory</span>
-      </Card>
-    )
+    return <CollectionLoading height="h-120" label="Loading user directory" />
   }
 
   if (usersQuery.isError || departmentsQuery.isError) {
     return (
-      <Card className="p-8 text-center">
-        <h1 className="text-xl font-semibold text-slate-950 dark:text-white">
-          User directory unavailable
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          The organization identity data could not be loaded.
-        </p>
-      </Card>
+      <CollectionError
+        description="The organization identity data could not be loaded."
+        onRetry={() => {
+          usersQuery.refetch()
+          departmentsQuery.refetch()
+        }}
+        title="User directory unavailable"
+      />
     )
   }
 
@@ -88,68 +105,43 @@ export function UserDirectory() {
     <div className="space-y-6">
       <PageHeader
         actions={
-          <Link
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
-            to="/users/new"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Add user
-          </Link>
+          <PermissionGate permission="users.manage">
+            <Link
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+              to="/users/new"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              Add user
+            </Link>
+          </PermissionGate>
         }
         description="Manage workforce identities, lifecycle state, organizational assignment, and team membership."
         eyebrow="Identity management"
         title="User directory"
       />
 
-      <section
-        aria-label="User summary"
-        className="grid gap-4 sm:grid-cols-3"
-      >
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Managed identities
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {users.length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Active users
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {activeUsers}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Pending invitations
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
-            {invitedUsers}
-          </p>
-        </Card>
-      </section>
+      <SummaryGrid
+        ariaLabel="User summary"
+        metrics={[
+          { label: 'Managed identities', value: users.length },
+          { label: 'Active users', value: activeUsers },
+          { label: 'Pending invitations', value: invitedUsers },
+        ]}
+      />
 
       <Card className="overflow-hidden">
-        <div className="grid gap-3 border-b border-slate-200 p-4 dark:border-slate-800 lg:grid-cols-[1fr_auto_auto]">
-          <label className="relative">
-            <span className="sr-only">Search users</span>
-            <Search
-              aria-hidden="true"
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-brand-950"
-              onChange={(event) => setSearch(event.target.value)}
+        <FilterBar
+          primary={
+            <SearchField
+              label="Search users"
+              onChange={setSearch}
               placeholder="Search name, email, employee ID, or title"
-              type="search"
               value={search}
             />
-          </label>
-          <select
-            aria-label="Filter users by department"
-            className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          }
+        >
+          <SelectFilter
+            label="Filter users by department"
             onChange={(event) => setDepartmentId(event.target.value)}
             value={departmentId}
           >
@@ -162,22 +154,12 @@ export function UserDirectory() {
                   {department.name}
                 </option>
               ))}
-          </select>
-          <select
-            aria-label="Filter users by lifecycle status"
-            className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-            onChange={(event) => {
-              const value = event.target.value
-              if (
-                value === 'all' ||
-                value === 'active' ||
-                value === 'invited' ||
-                value === 'suspended' ||
-                value === 'deactivated'
-              ) {
-                setStatus(value)
-              }
-            }}
+          </SelectFilter>
+          <SelectFilter
+            label="Filter users by lifecycle status"
+            onChange={(event) =>
+              setStatus(event.target.value as StatusFilter)
+            }
             value={status}
           >
             <option value="all">All statuses</option>
@@ -185,19 +167,14 @@ export function UserDirectory() {
             <option value="invited">Invited</option>
             <option value="suspended">Suspended</option>
             <option value="deactivated">Deactivated</option>
-          </select>
-        </div>
+          </SelectFilter>
+        </FilterBar>
 
         {filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <UserRound
-              aria-hidden="true"
-              className="mx-auto size-8 text-slate-300"
-            />
-            <p className="mt-3 font-semibold text-slate-900 dark:text-white">
-              No users match these filters
-            </p>
-          </div>
+          <CollectionEmpty
+            icon={<UserRound aria-hidden="true" className="size-8" />}
+            title="No users match these filters"
+          />
         ) : (
           <div
             className="max-h-146 overflow-auto"

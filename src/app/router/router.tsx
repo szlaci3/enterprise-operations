@@ -1,6 +1,21 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
+import type { PlatformModuleKey } from '../platform/platformRegistry'
+
+const moduleBoundary = (
+  module: PlatformModuleKey,
+  permission: 'create' | 'view' = 'view',
+) => async () => {
+  const { PlatformModuleBoundary } = await import(
+    '../platform/PlatformModuleBoundary'
+  )
+  return {
+    Component: () => (
+      <PlatformModuleBoundary module={module} permission={permission} />
+    ),
+  }
+}
 
 export const appRouter = createBrowserRouter([
   {
@@ -14,28 +29,20 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'overview',
-        lazy: async () => {
-          const { OverviewPage } = await import('../../pages/OverviewPage')
-          return { Component: OverviewPage }
-        },
+        lazy: moduleBoundary('overview'),
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { OverviewPage } = await import('../../pages/OverviewPage')
+              return { Component: OverviewPage }
+            },
+          },
+        ],
       },
       {
         path: 'analytics',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          const { FeatureAvailabilityBoundary } = await import(
-            '../../features/settings/components/FeatureAvailabilityBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="analytics.view">
-                <FeatureAvailabilityBoundary feature="analytics" />
-              </AuthorizationBoundary>
-            ),
-          }
-        },
+        lazy: moduleBoundary('analytics'),
         children: [
           {
             index: true,
@@ -61,16 +68,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'tasks',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="tasks.view" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('tasks'),
         children: [
           {
             index: true,
@@ -82,17 +80,17 @@ export const appRouter = createBrowserRouter([
           {
             path: 'new',
             lazy: async () => {
-              const { AuthorizationBoundary } = await import(
-                '../../features/access/components/AuthorizationBoundary'
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
               )
               const { CreateTaskPage } = await import(
                 '../../pages/TaskEditorPage'
               )
               return {
                 Component: () => (
-                  <AuthorizationBoundary permission="tasks.manage">
+                  <PlatformModuleBoundary module="tasks" permission="create">
                     <CreateTaskPage />
-                  </AuthorizationBoundary>
+                  </PlatformModuleBoundary>
                 ),
               }
             },
@@ -109,17 +107,17 @@ export const appRouter = createBrowserRouter([
           {
             path: ':taskId/edit',
             lazy: async () => {
-              const { AuthorizationBoundary } = await import(
-                '../../features/access/components/AuthorizationBoundary'
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
               )
               const { EditTaskPage } = await import(
                 '../../pages/TaskEditorPage'
               )
               return {
                 Component: () => (
-                  <AuthorizationBoundary permission="tasks.manage">
+                  <PlatformModuleBoundary module="tasks" permission="create">
                     <EditTaskPage />
-                  </AuthorizationBoundary>
+                  </PlatformModuleBoundary>
                 ),
               }
             },
@@ -128,84 +126,131 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'departments',
-        lazy: async () => {
-          const { DepartmentsPage } = await import(
-            '../../pages/DepartmentsPage'
-          )
-          return { Component: DepartmentsPage }
-        },
-      },
-      {
-        path: 'departments/new',
-        lazy: async () => {
-          const { CreateDepartmentPage } = await import(
-            '../../pages/DepartmentEditorPage'
-          )
-          return { Component: CreateDepartmentPage }
-        },
-      },
-      {
-        path: 'departments/:departmentId',
-        lazy: async () => {
-          const { DepartmentDetailPage } = await import(
-            '../../pages/DepartmentDetailPage'
-          )
-          return { Component: DepartmentDetailPage }
-        },
-      },
-      {
-        path: 'departments/:departmentId/edit',
-        lazy: async () => {
-          const { EditDepartmentPage } = await import(
-            '../../pages/DepartmentEditorPage'
-          )
-          return { Component: EditDepartmentPage }
-        },
+        lazy: moduleBoundary('departments'),
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { DepartmentsPage } = await import(
+                '../../pages/DepartmentsPage'
+              )
+              return { Component: DepartmentsPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
+              )
+              const { CreateDepartmentPage } = await import(
+                '../../pages/DepartmentEditorPage'
+              )
+              return {
+                Component: () => (
+                  <PlatformModuleBoundary
+                    module="departments"
+                    permission="create"
+                  >
+                    <CreateDepartmentPage />
+                  </PlatformModuleBoundary>
+                ),
+              }
+            },
+          },
+          {
+            path: ':departmentId',
+            lazy: async () => {
+              const { DepartmentDetailPage } = await import(
+                '../../pages/DepartmentDetailPage'
+              )
+              return { Component: DepartmentDetailPage }
+            },
+          },
+          {
+            path: ':departmentId/edit',
+            lazy: async () => {
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
+              )
+              const { EditDepartmentPage } = await import(
+                '../../pages/DepartmentEditorPage'
+              )
+              return {
+                Component: () => (
+                  <PlatformModuleBoundary
+                    module="departments"
+                    permission="create"
+                  >
+                    <EditDepartmentPage />
+                  </PlatformModuleBoundary>
+                ),
+              }
+            },
+          },
+        ],
       },
       {
         path: 'users',
-        lazy: async () => {
-          const { UsersPage } = await import('../../pages/UsersPage')
-          return { Component: UsersPage }
-        },
-      },
-      {
-        path: 'users/new',
-        lazy: async () => {
-          const { CreateUserPage } = await import(
-            '../../pages/UserEditorPage'
-          )
-          return { Component: CreateUserPage }
-        },
-      },
-      {
-        path: 'users/:userId',
-        lazy: async () => {
-          const { UserProfilePage } = await import(
-            '../../pages/UserProfilePage'
-          )
-          return { Component: UserProfilePage }
-        },
-      },
-      {
-        path: 'users/:userId/edit',
-        lazy: async () => {
-          const { EditUserPage } = await import('../../pages/UserEditorPage')
-          return { Component: EditUserPage }
-        },
+        lazy: moduleBoundary('users'),
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { UsersPage } = await import('../../pages/UsersPage')
+              return { Component: UsersPage }
+            },
+          },
+          {
+            path: 'new',
+            lazy: async () => {
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
+              )
+              const { CreateUserPage } = await import(
+                '../../pages/UserEditorPage'
+              )
+              return {
+                Component: () => (
+                  <PlatformModuleBoundary module="users" permission="create">
+                    <CreateUserPage />
+                  </PlatformModuleBoundary>
+                ),
+              }
+            },
+          },
+          {
+            path: ':userId',
+            lazy: async () => {
+              const { UserProfilePage } = await import(
+                '../../pages/UserProfilePage'
+              )
+              return { Component: UserProfilePage }
+            },
+          },
+          {
+            path: ':userId/edit',
+            lazy: async () => {
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
+              )
+              const { EditUserPage } = await import(
+                '../../pages/UserEditorPage'
+              )
+              return {
+                Component: () => (
+                  <PlatformModuleBoundary module="users" permission="create">
+                    <EditUserPage />
+                  </PlatformModuleBoundary>
+                ),
+              }
+            },
+          },
+        ],
       },
       {
         path: 'access',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="security.manage" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('access'),
         children: [
           {
             index: true,
@@ -245,16 +290,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'workflows',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="workflows.view" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('workflows'),
         children: [
           {
             index: true,
@@ -268,10 +304,22 @@ export const appRouter = createBrowserRouter([
           {
             path: 'new',
             lazy: async () => {
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
+              )
               const { CreateWorkflowPage } = await import(
                 '../../pages/WorkflowEditorPage'
               )
-              return { Component: CreateWorkflowPage }
+              return {
+                Component: () => (
+                  <PlatformModuleBoundary
+                    module="workflows"
+                    permission="create"
+                  >
+                    <CreateWorkflowPage />
+                  </PlatformModuleBoundary>
+                ),
+              }
             },
           },
           {
@@ -286,26 +334,29 @@ export const appRouter = createBrowserRouter([
           {
             path: ':workflowId/edit',
             lazy: async () => {
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
+              )
               const { EditWorkflowPage } = await import(
                 '../../pages/WorkflowEditorPage'
               )
-              return { Component: EditWorkflowPage }
+              return {
+                Component: () => (
+                  <PlatformModuleBoundary
+                    module="workflows"
+                    permission="create"
+                  >
+                    <EditWorkflowPage />
+                  </PlatformModuleBoundary>
+                ),
+              }
             },
           },
         ],
       },
       {
         path: 'approvals',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="approvals.review" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('approvals'),
         children: [
           {
             index: true,
@@ -338,16 +389,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'reports',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="reports.view" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('reports'),
         children: [
           {
             index: true,
@@ -359,17 +401,17 @@ export const appRouter = createBrowserRouter([
           {
             path: 'new',
             lazy: async () => {
-              const { AuthorizationBoundary } = await import(
-                '../../features/access/components/AuthorizationBoundary'
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
               )
               const { CreateReportPage } = await import(
                 '../../pages/ReportEditorPage'
               )
               return {
                 Component: () => (
-                  <AuthorizationBoundary permission="reports.manage">
+                  <PlatformModuleBoundary module="reports" permission="create">
                     <CreateReportPage />
-                  </AuthorizationBoundary>
+                  </PlatformModuleBoundary>
                 ),
               }
             },
@@ -386,17 +428,17 @@ export const appRouter = createBrowserRouter([
           {
             path: ':reportId/edit',
             lazy: async () => {
-              const { AuthorizationBoundary } = await import(
-                '../../features/access/components/AuthorizationBoundary'
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
               )
               const { EditReportPage } = await import(
                 '../../pages/ReportEditorPage'
               )
               return {
                 Component: () => (
-                  <AuthorizationBoundary permission="reports.manage">
+                  <PlatformModuleBoundary module="reports" permission="create">
                     <EditReportPage />
-                  </AuthorizationBoundary>
+                  </PlatformModuleBoundary>
                 ),
               }
             },
@@ -405,21 +447,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'documents',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          const { FeatureAvailabilityBoundary } = await import(
-            '../../features/settings/components/FeatureAvailabilityBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="documents.view">
-                <FeatureAvailabilityBoundary feature="documents" />
-              </AuthorizationBoundary>
-            ),
-          }
-        },
+        lazy: moduleBoundary('documents'),
         children: [
           {
             index: true,
@@ -433,17 +461,17 @@ export const appRouter = createBrowserRouter([
           {
             path: 'new',
             lazy: async () => {
-              const { AuthorizationBoundary } = await import(
-                '../../features/access/components/AuthorizationBoundary'
+              const { PlatformModuleBoundary } = await import(
+                '../platform/PlatformModuleBoundary'
               )
               const { DocumentEditorPage } = await import(
                 '../../pages/DocumentEditorPage'
               )
               return {
                 Component: () => (
-                  <AuthorizationBoundary permission="documents.manage">
+                  <PlatformModuleBoundary module="documents" permission="create">
                     <DocumentEditorPage />
-                  </AuthorizationBoundary>
+                  </PlatformModuleBoundary>
                 ),
               }
             },
@@ -474,16 +502,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'diagnostics',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="diagnostics.view" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('diagnostics'),
         children: [
           {
             index: true,
@@ -498,16 +517,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'audit',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="audit.view" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('audit'),
         children: [
           {
             index: true,
@@ -520,16 +530,7 @@ export const appRouter = createBrowserRouter([
       },
       {
         path: 'settings',
-        lazy: async () => {
-          const { AuthorizationBoundary } = await import(
-            '../../features/access/components/AuthorizationBoundary'
-          )
-          return {
-            Component: () => (
-              <AuthorizationBoundary permission="settings.view" />
-            ),
-          }
-        },
+        lazy: moduleBoundary('settings'),
         children: [
           {
             index: true,
