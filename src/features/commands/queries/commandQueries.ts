@@ -1,9 +1,10 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { PermissionKey } from '../../access/schemas/accessSchemas'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const commandKeys = {
   search: (query: string, permissionKeys: PermissionKey[]) =>
-    ['commands', 'search', query, permissionKeys.join(',')] as const,
+    tenantQueryKey('commands', 'search', query, permissionKeys.join(',')),
 }
 
 export const commandSearchOptions = (

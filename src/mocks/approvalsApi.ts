@@ -3,6 +3,7 @@ import {
   type ApprovalRequest,
 } from '../features/approvals/schemas/approvalSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const approvalsStorageKey = 'enterprise-operations-approvals'
 
@@ -158,7 +159,7 @@ const delay = (milliseconds: number) =>
 const approvalsStore = createVersionedStore({
   key: approvalsStorageKey,
   schema: approvalRequestsSchema,
-  seed: () => seedApprovals,
+  seed: () => (getActiveTenantId() === 'atlas' ? [] : seedApprovals),
   version: 1,
 })
 

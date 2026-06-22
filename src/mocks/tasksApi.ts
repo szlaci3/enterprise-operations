@@ -3,6 +3,7 @@ import {
   type Task,
 } from '../features/tasks/schemas/taskSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const tasksStorageKey = 'enterprise-operations-tasks'
 
@@ -126,7 +127,7 @@ const delay = (milliseconds: number) =>
 const tasksStore = createVersionedStore({
   key: tasksStorageKey,
   schema: tasksSchema,
-  seed: () => seedTasks,
+  seed: () => (getActiveTenantId() === 'atlas' ? [] : seedTasks),
   version: 1,
 })
 

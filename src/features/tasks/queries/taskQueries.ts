@@ -9,9 +9,12 @@ import type {
 } from '../schemas/taskSchemas'
 import { taskService } from '../services/taskService'
 import { offlineService } from '../../offline/services/offlineService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const taskKeys = {
-  all: ['tasks'] as const,
+  get all() {
+    return tenantQueryKey('tasks')
+  },
   detail: (id: string) => [...taskKeys.all, 'detail', id] as const,
   list: () => [...taskKeys.all, 'list'] as const,
 }
@@ -71,7 +74,9 @@ export function useTransitionTask(id: string, actorUserId: string) {
       taskService.transition(id, actorUserId, values),
     onSuccess: (task) => updateCache(id, task),
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['offline'] })
+      await queryClient.invalidateQueries({
+        queryKey: tenantQueryKey('offline'),
+      })
     },
   })
 }

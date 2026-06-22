@@ -3,6 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 async function getDiagnosticsService() {
   const { diagnosticsService } = await import(
@@ -12,7 +13,9 @@ async function getDiagnosticsService() {
 }
 
 export const diagnosticsKeys = {
-  all: ['diagnostics'] as const,
+  get all() {
+    return tenantQueryKey('diagnostics')
+  },
   snapshot: () => [...diagnosticsKeys.all, 'snapshot'] as const,
 }
 

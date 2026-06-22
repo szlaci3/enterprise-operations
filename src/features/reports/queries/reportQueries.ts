@@ -6,9 +6,12 @@ import {
 } from '@tanstack/react-query'
 import type { ReportFormValues } from '../schemas/reportSchemas'
 import { reportService } from '../services/reportService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const reportKeys = {
-  all: ['reports'] as const,
+  get all() {
+    return tenantQueryKey('reports')
+  },
   detail: (id: string) => [...reportKeys.all, 'detail', id] as const,
   execution: (id: string) => [...reportKeys.all, 'execution', id] as const,
   list: () => [...reportKeys.all, 'list'] as const,

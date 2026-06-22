@@ -5,6 +5,7 @@ import {
   type User,
 } from '../features/users/schemas/userSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const usersStorageKey = 'enterprise-operations-users'
 const teamsStorageKey = 'enterprise-operations-teams'
@@ -147,13 +148,60 @@ const seedUsers: User[] = [
   },
 ]
 
+const atlasUsers: User[] = [
+  {
+    createdAt: '2026-04-01T09:00:00.000Z',
+    departmentId: 'dept-atlas-operations',
+    email: 'avery.morgan@atlas.example',
+    employeeId: 'ATL-1001',
+    employmentType: 'employee',
+    firstName: 'Avery',
+    id: 'user-avery-morgan',
+    jobTitle: 'Workspace Administrator',
+    lastName: 'Morgan',
+    lastSeenAt: '2026-06-22T08:42:00.000Z',
+    location: 'Chicago, United States',
+    managerId: null,
+    startDate: '2026-04-01',
+    status: 'active',
+    teamIds: ['team-atlas-service-governance'],
+    updatedAt: '2026-06-22T08:42:00.000Z',
+  },
+  {
+    createdAt: '2026-04-02T09:00:00.000Z',
+    departmentId: 'dept-atlas-operations',
+    email: 'jordan.lee@atlas.example',
+    employeeId: 'ATL-1014',
+    employmentType: 'employee',
+    firstName: 'Jordan',
+    id: 'user-jordan-lee',
+    jobTitle: 'Director, Service Operations',
+    lastName: 'Lee',
+    lastSeenAt: '2026-06-21T17:10:00.000Z',
+    location: 'Denver, United States',
+    managerId: 'user-avery-morgan',
+    startDate: '2024-08-12',
+    status: 'active',
+    teamIds: ['team-atlas-service-governance'],
+    updatedAt: '2026-06-21T17:10:00.000Z',
+  },
+]
+
+const atlasTeams: Team[] = [
+  {
+    description: 'Owns Atlas service performance and operating controls.',
+    id: 'team-atlas-service-governance',
+    name: 'Atlas Service Governance',
+  },
+]
+
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
 const usersStore = createVersionedStore({
   key: usersStorageKey,
   schema: usersSchema,
-  seed: () => seedUsers,
+  seed: () => (getActiveTenantId() === 'atlas' ? atlasUsers : seedUsers),
   version: 1,
 })
 
@@ -164,7 +212,7 @@ function writeUsers(users: User[]) {
 const teamsStore = createVersionedStore({
   key: teamsStorageKey,
   schema: teamsSchema,
-  seed: () => seedTeams,
+  seed: () => (getActiveTenantId() === 'atlas' ? atlasTeams : seedTeams),
   version: 1,
 })
 

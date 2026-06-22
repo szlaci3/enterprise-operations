@@ -6,6 +6,8 @@ import { currentSessionUserId } from '../../../app/session/currentSession'
 import { Card } from '../../../shared/components/Card'
 import { settingsSnapshotOptions } from '../queries/settingsQueries'
 import type { FeatureKey } from '../schemas/settingsSchemas'
+import { workspaceSnapshotOptions } from '../../tenancy/queries/tenancyQueries'
+import { featureIsAvailable } from '../utils/featureAvailability'
 
 export function FeatureAvailabilityBoundary({
   children,
@@ -15,11 +17,9 @@ export function FeatureAvailabilityBoundary({
   feature: FeatureKey
 }) {
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
-  const configuration = settingsQuery.data?.features.find(
-    (item) => item.key === feature,
-  )
+  const workspaceQuery = useQuery(workspaceSnapshotOptions())
 
-  if (settingsQuery.isPending) {
+  if (settingsQuery.isPending || workspaceQuery.isPending) {
     return (
       <Card className="h-72 animate-pulse bg-slate-100 dark:bg-slate-800">
         <span className="sr-only">Checking feature availability</span>
@@ -27,7 +27,17 @@ export function FeatureAvailabilityBoundary({
     )
   }
 
-  if (settingsQuery.isError || configuration?.state === 'disabled') {
+  if (
+    settingsQuery.isError ||
+    workspaceQuery.isError ||
+    !settingsQuery.data ||
+    !workspaceQuery.data ||
+    !featureIsAvailable(
+      settingsQuery.data.features,
+      feature,
+      workspaceQuery.data.membership.role,
+    )
+  ) {
     return (
       <Card className="mx-auto max-w-xl p-8 text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800">

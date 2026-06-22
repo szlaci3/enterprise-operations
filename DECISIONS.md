@@ -2811,20 +2811,152 @@ monolithic configuration or data-grid layer.
 
 ---
 
+# ADR-030
+
+## Title
+
+Tenant Context as Repository Namespace and Query-Key Root
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+M1–M22 assumed one Northstar organization. Durable browser keys, TanStack Query
+keys, organization settings, access assignments, feature rollout, audit,
+notifications, and offline state had no workspace ownership boundary.
+
+Phase 2 requires realistic multi-tenancy, but adding `tenantId` manually to
+every aggregate, service call, and component would create invasive coupling
+and still allow cache or repository mistakes. Existing browser data also had
+to become Northstar-owned without a destructive reset.
+
+The frontend simulation cannot provide a genuine security boundary, but it
+must model the ownership and isolation contracts expected from a backend.
+
+---
+
+### Decision
+
+Model a global tenant catalog and explicit user-to-tenant memberships. Persist
+one active tenant for the device session and expose it synchronously through a
+tenant context plus a reactive Zustand workspace store.
+
+Make tenant identity the repository namespace:
+
+```text
+enterprise-operations-tenant-{tenantId}-{domainKey}
+```
+
+`createVersionedStore` uses tenant scope by default and resolves the key for
+every operation. Global stores must opt out explicitly. Treat repository
+namespace as the tenant ownership of frontend aggregates rather than adding a
+duplicated field to each record.
+
+For Northstar only, when a scoped key is absent, inspect the historical
+unscoped key. Validate and migrate it through the normal store contract, write
+the scoped envelope, and remove the source only after success.
+
+Make tenant identity the first segment of every feature query-key root:
+
+```text
+['tenant', tenantId, domain, ...segments]
+```
+
+On workspace switch, cancel active queries, update the tenant context, clear
+the QueryClient, and navigate to the overview. Tenant-prefixed keys remain a
+second isolation layer against late or stale results.
+
+Keep the simulated user identity stable across workspaces, but give each
+workspace its own user record, organization model, roles, assignments,
+settings, and business data.
+
+Extend feature rollout configuration with:
+
+* all-member or administrator pilot audiences
+* tenant-owned prerequisite keys
+* one recursive availability evaluator used by navigation, routes, embedded
+  gates, and commands
+
+Do not represent this frontend isolation as authorization. A real backend must
+derive tenant scope from authenticated membership and enforce it server-side.
+
+---
+
+### Alternatives Considered
+
+#### Add `tenantId` to Every Domain Aggregate
+
+Rejected for the frontend simulation because repository ownership already
+provides the boundary, while duplicated tenant fields would require broad
+schema and form churn. A backend may still include tenant columns internally.
+
+#### Keep Shared Persistence and Filter Collections by Tenant
+
+Rejected because one missed filter would leak records and large shared stores
+would complicate migration, deletion, and diagnostics.
+
+#### Use Separate QueryClient Instances per Tenant
+
+Rejected because tenant-prefixed keys plus cancellation and cache clearing are
+sufficient, easier to inspect, and map directly to future request cache keys.
+
+#### Reload the Entire Application on Switch
+
+Rejected because the platform can safely switch context in place and preserve
+shell behavior without a disruptive hard reload.
+
+#### Copy Legacy Data and Retain Unscoped Keys
+
+Rejected because duplicate authoritative payloads would drift. The source is
+removed only after a successful scoped write.
+
+#### Treat Boolean Feature State as Sufficient
+
+Rejected because realistic pilots need a target cohort and dependencies must
+not expose a feature whose required capability is unavailable.
+
+---
+
+### Consequences
+
+Positive:
+
+* every durable domain has an explicit tenant ownership strategy
+* cache and persistence identity use the same tenant context
+* existing Northstar data upgrades without reset
+* migration failure cannot destroy the legacy source
+* Atlas provides an observable isolation test with distinct seed data
+* settings, access, audit, notifications, offline work, and diagnostics are
+  isolated automatically
+* feature pilots and prerequisites behave consistently across entry points
+* a future backend can replace repositories without redesigning the UI domain
+  models
+
+Negative:
+
+* the active tenant is process-global for the current browser tab
+* all repository operations must occur under the intended active context
+* frontend-only isolation is not secure against browser manipulation
+* stable user IDs across tenants are a simulation convenience
+* workspace switching clears useful cached data from the previous workspace
+* a multi-tab workspace model would require explicit synchronization policy
+
+These trade-offs are accepted for a clear backend-compatible ownership model
+with safe migration and strong local isolation.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:
 
 * Authentication architecture
-* Authorization model
-* Notification architecture
-* Offline support strategy
-* Audit logging implementation
-* Search architecture
-* Feature flag system
-* Multi-tenancy
-* Reporting engine
-* Analytics architecture
+* Backend-enforced tenant and authorization context
+* Multi-tab workspace synchronization
 * Plugin system
 * Testing strategy
 * Deployment strategy

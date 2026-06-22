@@ -5,10 +5,13 @@ import {
 } from '@tanstack/react-query'
 import type { RoleFormValues } from '../schemas/accessSchemas'
 import { accessService } from '../services/accessService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const accessKeys = {
   access: (userId: string) => [...accessKeys.all, 'effective', userId] as const,
-  all: ['access'] as const,
+  get all() {
+    return tenantQueryKey('access')
+  },
   assignments: () => [...accessKeys.all, 'assignments'] as const,
   permissions: () => [...accessKeys.all, 'permissions'] as const,
   role: (id: string) => [...accessKeys.all, 'role', id] as const,

@@ -5,9 +5,12 @@ import {
 } from '@tanstack/react-query'
 import type { UserFormValues, UserStatus } from '../schemas/userSchemas'
 import { userService } from '../services/userService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const userKeys = {
-  all: ['users'] as const,
+  get all() {
+    return tenantQueryKey('users')
+  },
   detail: (id: string) => [...userKeys.all, 'detail', id] as const,
   list: () => [...userKeys.all, 'list'] as const,
   teams: () => [...userKeys.all, 'teams'] as const,

@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { AuditEntityType } from '../schemas/auditSchemas'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 async function getAuditService() {
   const { auditService } = await import('../services/auditService')
@@ -7,7 +8,9 @@ async function getAuditService() {
 }
 
 export const auditKeys = {
-  all: ['audit'] as const,
+  get all() {
+    return tenantQueryKey('audit')
+  },
   entity: (entityType: AuditEntityType, entityId: string) =>
     [...auditKeys.all, 'entity', entityType, entityId] as const,
   list: () => [...auditKeys.all, 'list'] as const,

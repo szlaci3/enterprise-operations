@@ -13,7 +13,11 @@ import {
   useUpdateOrganizationSettings,
   useUpdatePersonalSettings,
 } from '../queries/settingsQueries'
-import type { FeatureKey, FeatureState } from '../schemas/settingsSchemas'
+import type {
+  FeatureAudience,
+  FeatureKey,
+  FeatureState,
+} from '../schemas/settingsSchemas'
 import { FeatureConfigurationPanel } from './FeatureConfigurationPanel'
 import { OrganizationSettingsForm } from './OrganizationSettingsForm'
 import { PersonalSettingsForm } from './PersonalSettingsForm'
@@ -163,8 +167,14 @@ export function SettingsWorkspace() {
             <FeatureConfigurationPanel
               features={settings.features}
               isSaving={updateFeature.isPending}
-              onChange={async (key: FeatureKey, state: FeatureState) => {
-                await updateFeature.mutateAsync({ key, state })
+              onChange={async (
+                key: FeatureKey,
+                values: {
+                  audience: FeatureAudience
+                  state: FeatureState
+                },
+              ) => {
+                await updateFeature.mutateAsync({ key, ...values })
               }}
             />
             <SettingsChangeLog

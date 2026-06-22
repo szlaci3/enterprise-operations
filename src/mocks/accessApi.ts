@@ -7,6 +7,7 @@ import {
   type RoleAssignment,
 } from '../features/access/schemas/accessSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const rolesStorageKey = 'enterprise-operations-roles'
 const assignmentsStorageKey = 'enterprise-operations-role-assignments'
@@ -297,6 +298,19 @@ const seedAssignments: RoleAssignment[] = [
   },
 ]
 
+const atlasAssignments: RoleAssignment[] = [
+  {
+    assignedAt: '2026-04-01T09:00:00.000Z',
+    roleId: 'role-platform-administrator',
+    userId: 'user-avery-morgan',
+  },
+  {
+    assignedAt: '2026-04-02T09:00:00.000Z',
+    roleId: 'role-service-governor',
+    userId: 'user-jordan-lee',
+  },
+]
+
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
@@ -331,7 +345,8 @@ const rolesStore = createVersionedStore({
 const assignmentsStore = createVersionedStore({
   key: assignmentsStorageKey,
   schema: roleAssignmentsSchema,
-  seed: () => seedAssignments,
+  seed: () =>
+    getActiveTenantId() === 'atlas' ? atlasAssignments : seedAssignments,
   version: 1,
 })
 

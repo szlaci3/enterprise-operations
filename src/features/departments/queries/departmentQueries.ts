@@ -5,9 +5,12 @@ import {
 } from '@tanstack/react-query'
 import type { DepartmentFormValues } from '../schemas/departmentSchemas'
 import { departmentService } from '../services/departmentService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const departmentKeys = {
-  all: ['departments'] as const,
+  get all() {
+    return tenantQueryKey('departments')
+  },
   detail: (id: string) => [...departmentKeys.all, 'detail', id] as const,
   list: () => [...departmentKeys.all, 'list'] as const,
 }

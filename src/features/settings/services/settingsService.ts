@@ -5,12 +5,14 @@ import {
 import { userService } from '../../users/services/userService'
 import {
   featureKeySchema,
+  featureAudienceSchema,
   featureStateSchema,
   organizationSettingsFormSchema,
   personalSettingsFormSchema,
   settingsSnapshotSchema,
   settingsStoreSchema,
   type FeatureKey,
+  type FeatureAudience,
   type FeatureState,
   type OrganizationSettingsFormValues,
   type PersonalSettings,
@@ -96,10 +98,11 @@ export const settingsService = {
   async updateFeature(
     actorUserId: string,
     key: FeatureKey,
-    state: FeatureState,
+    values: { audience: FeatureAudience; state: FeatureState },
   ): Promise<SettingsSnapshot> {
     const parsedKey = featureKeySchema.parse(key)
-    const parsedState = featureStateSchema.parse(state)
+    const parsedState = featureStateSchema.parse(values.state)
+    const parsedAudience = featureAudienceSchema.parse(values.audience)
     await assertActiveActor(actorUserId)
     const store = await getStore()
     const current = store.features.find((feature) => feature.key === parsedKey)
@@ -109,20 +112,38 @@ export const settingsService = {
         'invalid-configuration',
       )
     }
-    if (current.state === parsedState) return snapshot(store, actorUserId)
+    if (
+      current.state === parsedState &&
+      current.audience === parsedAudience
+    ) {
+      return snapshot(store, actorUserId)
+    }
     const now = new Date().toISOString()
+    const featureChanges = [
+      ...(current.state === parsedState
+        ? []
+        : [{ field: parsedKey, from: current.state, to: parsedState }]),
+      ...(current.audience === parsedAudience
+        ? []
+        : [
+            {
+              field: `${parsedKey}.audience`,
+              from: current.audience,
+              to: parsedAudience,
+            },
+          ]),
+    ]
     const updated = settingsStoreSchema.parse({
       ...store,
       changes: [
         ...store.changes,
-        ...changeRecords(actorUserId, 'feature', [
-          { field: parsedKey, from: current.state, to: parsedState },
-        ]),
+        ...changeRecords(actorUserId, 'feature', featureChanges),
       ],
       features: store.features.map((feature) =>
         feature.key === parsedKey
           ? {
               ...feature,
+              audience: parsedAudience,
               state: parsedState,
               updatedAt: now,
               updatedByUserId: actorUserId,

@@ -22,6 +22,8 @@ import { AlertsPanel } from './AlertsPanel'
 import { KpiGrid } from './KpiGrid'
 import { ServiceHealthTable } from './ServiceHealthTable'
 import { WorkloadChart } from './WorkloadChart'
+import { settingsSnapshotOptions } from '../../settings/queries/settingsQueries'
+import { currentSessionUserId } from '../../../app/session/currentSession'
 
 const periodOptions: { label: string; value: DashboardPeriod }[] = [
   { label: 'Last 7 days', value: '7d' },
@@ -55,6 +57,7 @@ function DashboardLoading() {
 export function OperationalDashboard() {
   const [period, setPeriod] = useState<DashboardPeriod>('30d')
   const snapshotQuery = useQuery(dashboardSnapshotOptions(period))
+  const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
   const acknowledgeAlert = useAcknowledgeDashboardAlert()
 
   if (snapshotQuery.isPending) {
@@ -136,7 +139,7 @@ export function OperationalDashboard() {
           </div>
         }
         description="Monitor service delivery, workload movement, operating risk, and the actions shaping today's performance."
-        eyebrow="Northstar Group · Operations command center"
+        eyebrow={`${settingsQuery.data?.organization.name ?? 'Enterprise'} · Operations command center`}
         title="Operational overview"
       />
 

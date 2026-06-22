@@ -5,9 +5,12 @@ import {
 } from '@tanstack/react-query'
 import { taskKeys } from '../../tasks/queries/taskQueries'
 import { offlineService } from '../services/offlineService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const offlineKeys = {
-  all: ['offline'] as const,
+  get all() {
+    return tenantQueryKey('offline')
+  },
   snapshot: () => [...offlineKeys.all, 'snapshot'] as const,
 }
 

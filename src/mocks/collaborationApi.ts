@@ -3,6 +3,7 @@ import {
   type CollaborationStore,
 } from '../features/collaboration/schemas/collaborationSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const collaborationStorageKey = 'enterprise-operations-collaboration'
 
@@ -53,7 +54,8 @@ const delay = (milliseconds: number) =>
 const collaborationStore = createVersionedStore({
   key: collaborationStorageKey,
   schema: collaborationStoreSchema,
-  seed: () => seedStore,
+  seed: () =>
+    getActiveTenantId() === 'atlas' ? { comments: [] } : seedStore,
   version: 1,
 })
 

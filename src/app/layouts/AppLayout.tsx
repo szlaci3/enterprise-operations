@@ -8,6 +8,10 @@ import { lazy, Suspense, useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { settingsSnapshotOptions } from '../../features/settings/queries/settingsQueries'
 import type { FeatureKey } from '../../features/settings/schemas/settingsSchemas'
+import { featureIsAvailable } from '../../features/settings/utils/featureAvailability'
+import { workspaceSnapshotOptions } from '../../features/tenancy/queries/tenancyQueries'
+import { useWorkspaceStore } from '../../features/tenancy/store/workspaceStore'
+import { WorkspaceSwitcher } from '../../features/tenancy/components/WorkspaceSwitcher'
 import { useUiStore } from '../../store/uiStore'
 import { currentSessionUserId } from '../session/currentSession'
 import { platformIconByKey } from '../platform/platformIcons'
@@ -77,6 +81,9 @@ function SidebarContent({
           </p>
         </div>
       </div>
+      <div className="border-b border-slate-200 p-3 dark:border-slate-800">
+        <WorkspaceSwitcher />
+      </div>
 
       <nav
         aria-label="Primary navigation"
@@ -126,10 +133,12 @@ function SidebarContent({
 
 export function AppLayout() {
   const location = useLocation()
+  useWorkspaceStore((state) => state.activeTenantId)
   const mobileDialogRef = useRef<HTMLElement>(null)
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null)
   const wasMobileNavigationOpen = useRef(false)
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
+  const workspaceQuery = useQuery(workspaceSnapshotOptions())
   const isMobileNavigationOpen = useUiStore(
     (state) => state.isMobileNavigationOpen,
   )
@@ -140,12 +149,21 @@ export function AppLayout() {
     (state) => state.toggleMobileNavigation,
   )
   const organizationName =
-    settingsQuery.data?.organization.name ?? 'Northstar Group'
+    settingsQuery.data?.organization.name ??
+    workspaceQuery.data?.activeTenant.name ??
+    'Enterprise workspace'
   const density = settingsQuery.data?.personal.density ?? 'comfortable'
   const featureIsVisible = (feature?: FeatureKey) =>
     !feature ||
-    settingsQuery.data?.features.find((item) => item.key === feature)?.state !==
-      'disabled'
+    Boolean(
+      settingsQuery.data &&
+        workspaceQuery.data &&
+        featureIsAvailable(
+          settingsQuery.data.features,
+          feature,
+          workspaceQuery.data.membership.role,
+        ),
+    )
   const moduleIsVisible = (module: PlatformModuleDefinition) =>
     featureIsVisible(module.feature)
 

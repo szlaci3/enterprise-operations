@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { currentSessionUserId } from '../../../app/session/currentSession'
 import { settingsSnapshotOptions } from '../queries/settingsQueries'
 import type { FeatureKey } from '../schemas/settingsSchemas'
+import { workspaceSnapshotOptions } from '../../tenancy/queries/tenancyQueries'
+import { featureIsAvailable } from '../utils/featureAvailability'
 
 export function FeatureGate({
   children,
@@ -12,9 +14,19 @@ export function FeatureGate({
   feature: FeatureKey
 }) {
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
-  const configuration = settingsQuery.data?.features.find(
-    (item) => item.key === feature,
-  )
-  if (settingsQuery.isError || configuration?.state === 'disabled') return null
+  const workspaceQuery = useQuery(workspaceSnapshotOptions())
+  if (
+    settingsQuery.isError ||
+    workspaceQuery.isError ||
+    !settingsQuery.data ||
+    !workspaceQuery.data ||
+    !featureIsAvailable(
+      settingsQuery.data.features,
+      feature,
+      workspaceQuery.data.membership.role,
+    )
+  ) {
+    return null
+  }
   return children
 }

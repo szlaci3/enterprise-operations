@@ -83,7 +83,7 @@ platform foundations required to support it.
 
 Status: ACTIVE
 
-Active Milestone: M23 – Tenant and Workspace Boundaries
+Active Milestone: M24 – Saved Views and Advanced Operational Search
 
 Objective:
 
@@ -812,33 +812,65 @@ Deferred Deliberately:
 
 ## M23 – Tenant and Workspace Boundaries
 
-Status: Active
+Status: Completed (June 22, 2026)
 
 Objective:
 
 Model organization membership and isolate all server-like data by active
 workspace without pretending frontend controls are a security boundary.
 
-Planned Scope:
+Delivered:
 
-* Tenant, membership, and active-workspace contracts
-* Tenant-scoped persistence keys and TanStack Query keys
-* Workspace switcher with query cancellation and cache isolation
-* Tenant-aware organization settings, roles, feature configuration, and audit
-* Migration of the existing Northstar data set into the default tenant
-* Feature rollout cohorts and tenant-level prerequisites
+* Validated tenant, membership, role, active-workspace, tenancy-store, and
+  workspace-snapshot contracts
+* Global tenancy catalog with Northstar Group and Atlas Services memberships
+  for the simulated current identity
+* Persisted active-workspace selection with legacy string upgrade to a
+  versioned global envelope
+* Accessible workspace switcher in desktop and mobile navigation
+* Switch workflow that cancels in-flight queries, changes active context,
+  clears cached server-like state, and returns to the canonical overview
+* Dynamic tenant persistence namespace applied by the versioned-store boundary
+  to every durable domain store
+* Automatic first-read migration of existing unscoped M1–M22 stores into the
+  Northstar namespace, with source removal only after successful validation and
+  write
+* Global-scope exception reserved for the tenancy catalog; transient UI state
+  remains intentionally device-global
+* Tenant-prefixed TanStack Query roots across dashboard, organization, access,
+  workflows, approvals, tasks, communication, audit, reporting, analytics,
+  search, documents, settings, offline synchronization, diagnostics, and
+  command discovery
+* Tenant-aware organization settings, personal preferences, roles,
+  assignments, audit projections, notifications, search preferences, offline
+  operations, diagnostics incidents, and acknowledged alerts
+* Distinct Atlas organization, identities, department, access assignments,
+  dashboard snapshot, and empty operational stores proving namespace isolation
+* Generic organization identifiers replacing the former Northstar literal
+* Feature rollout policy with enabled, pilot, and disabled states, pilot
+  audiences for all members or administrators, and recursive feature
+  prerequisites
+* Shared feature availability evaluation across shell navigation, routes,
+  embedded feature gates, and command discovery
+* Settings schema migration from feature configuration version one to version
+  two without resetting existing Northstar policy
+* Diagnostics metadata identifying global and tenant-owned persistence entries
 
-Exit Criteria:
+Ownership Strategy:
 
-* Switching workspaces cannot leak cached or persisted records across tenants
-* All durable business records have an explicit tenant ownership strategy
-* Current single-tenant data upgrades without destructive reset
+* Business aggregates retain backend-ready domain shapes and inherit tenant
+  ownership from their repository namespace
+* TanStack Query keys carry the same tenant identity as persistence
+* Global data is limited to tenant membership/catalog context and device-level
+  shell state
+* Frontend isolation models backend boundaries but is not represented as a
+  security boundary
 
 ---
 
 ## M24 – Saved Views and Advanced Operational Search
 
-Status: Planned
+Status: Active
 
 Objective:
 

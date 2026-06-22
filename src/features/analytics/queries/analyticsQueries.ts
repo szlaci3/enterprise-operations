@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { AnalyticsFilters } from '../schemas/analyticsSchemas'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 async function getAnalyticsService() {
   const { analyticsService } = await import('../services/analyticsService')
@@ -7,7 +8,9 @@ async function getAnalyticsService() {
 }
 
 export const analyticsKeys = {
-  all: ['analytics'] as const,
+  get all() {
+    return tenantQueryKey('analytics')
+  },
   snapshot: (filters: AnalyticsFilters) =>
     [
       ...analyticsKeys.all,

@@ -5,9 +5,12 @@ import {
 } from '@tanstack/react-query'
 import type { DashboardPeriod } from '../schemas/dashboardSchemas'
 import { dashboardService } from '../services/dashboardService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const dashboardKeys = {
-  all: ['dashboard'] as const,
+  get all() {
+    return tenantQueryKey('dashboard')
+  },
   snapshot: (period: DashboardPeriod) =>
     [...dashboardKeys.all, 'snapshot', period] as const,
 }

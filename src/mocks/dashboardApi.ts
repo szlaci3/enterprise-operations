@@ -7,6 +7,7 @@ import type {
   ServiceSummary,
   WorkloadPoint,
 } from '../features/dashboard/schemas/dashboardSchemas'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const latency = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
@@ -220,6 +221,43 @@ export async function getDashboardSnapshot(
   acknowledgedAlertIds: string[],
 ): Promise<unknown> {
   await latency(450)
+
+  if (getActiveTenantId() === 'atlas') {
+    const snapshot: DashboardSnapshot = {
+      activities: [],
+      alerts: [],
+      generatedAt: new Date().toISOString(),
+      kpis: createKpis(period).map((kpi) => ({
+        ...kpi,
+        series: kpi.series.map(() => 0),
+        trend: { ...kpi.trend, change: 0, direction: 'flat' },
+        value:
+          kpi.format === 'percent'
+            ? 100
+            : kpi.format === 'duration'
+              ? 0
+              : 0,
+      })),
+      period,
+      services: [
+        {
+          id: 'atlas-service-operations',
+          name: 'Atlas Service Operations',
+          openItems: 0,
+          owner: 'Jordan Lee',
+          slaPerformance: 100,
+          status: 'healthy',
+          throughput: 0,
+        },
+      ],
+      workload: workloadByPeriod[period].map((point) => ({
+        ...point,
+        completed: 0,
+        received: 0,
+      })),
+    }
+    return snapshot
+  }
 
   const snapshot: DashboardSnapshot = {
     activities,

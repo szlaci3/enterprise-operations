@@ -3,6 +3,7 @@ import { Badge } from '../../../shared/components/Badge'
 import { Card } from '../../../shared/components/Card'
 import type {
   FeatureConfiguration,
+  FeatureAudience,
   FeatureKey,
   FeatureState,
 } from '../schemas/settingsSchemas'
@@ -35,7 +36,10 @@ export function FeatureConfigurationPanel({
 }: {
   features: FeatureConfiguration[]
   isSaving: boolean
-  onChange: (key: FeatureKey, state: FeatureState) => Promise<void>
+  onChange: (
+    key: FeatureKey,
+    values: { audience: FeatureAudience; state: FeatureState },
+  ) => Promise<void>
 }) {
   return (
     <Card className="overflow-hidden">
@@ -66,20 +70,48 @@ export function FeatureConfigurationPanel({
                 <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
                   {catalog.description}
                 </p>
+                {feature.prerequisiteKeys.length > 0 ? (
+                  <p className="mt-2 text-xs text-slate-400">
+                    Requires:{' '}
+                    {feature.prerequisiteKeys
+                      .map((key) => featureCatalog[key].label)
+                      .join(', ')}
+                  </p>
+                ) : null}
               </div>
-              <select
-                aria-label={`${catalog.label} rollout state`}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-                disabled={isSaving}
-                onChange={(event) =>
-                  onChange(feature.key, event.target.value as FeatureState)
-                }
-                value={feature.state}
-              >
-                <option value="enabled">Enabled</option>
-                <option value="pilot">Pilot</option>
-                <option value="disabled">Disabled</option>
-              </select>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  aria-label={`${catalog.label} pilot audience`}
+                  className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                  disabled={isSaving || feature.state !== 'pilot'}
+                  onChange={(event) =>
+                    onChange(feature.key, {
+                      audience: event.target.value as FeatureAudience,
+                      state: feature.state,
+                    })
+                  }
+                  value={feature.audience}
+                >
+                  <option value="all-members">All members</option>
+                  <option value="administrators">Administrators</option>
+                </select>
+                <select
+                  aria-label={`${catalog.label} rollout state`}
+                  className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                  disabled={isSaving}
+                  onChange={(event) =>
+                    onChange(feature.key, {
+                      audience: feature.audience,
+                      state: event.target.value as FeatureState,
+                    })
+                  }
+                  value={feature.state}
+                >
+                  <option value="enabled">Enabled</option>
+                  <option value="pilot">Pilot</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
             </div>
           )
         })}

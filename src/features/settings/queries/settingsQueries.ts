@@ -5,11 +5,13 @@ import {
 } from '@tanstack/react-query'
 import type {
   FeatureKey,
+  FeatureAudience,
   FeatureState,
   OrganizationSettingsFormValues,
   PersonalSettingsFormValues,
   SettingsSnapshot,
 } from '../schemas/settingsSchemas'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 async function getSettingsService() {
   const { settingsService } = await import('../services/settingsService')
@@ -17,7 +19,9 @@ async function getSettingsService() {
 }
 
 export const settingsKeys = {
-  all: ['settings'] as const,
+  get all() {
+    return tenantQueryKey('settings')
+  },
   snapshot: (userId: string) =>
     [...settingsKeys.all, 'snapshot', userId] as const,
 }
@@ -59,7 +63,18 @@ export function useUpdateOrganizationSettings(actorUserId: string) {
 export function useUpdateFeatureConfiguration(actorUserId: string) {
   return useSettingsMutation(
     actorUserId,
-    async ({ key, state }: { key: FeatureKey; state: FeatureState }) =>
-      (await getSettingsService()).updateFeature(actorUserId, key, state),
+    async ({
+      audience,
+      key,
+      state,
+    }: {
+      audience: FeatureAudience
+      key: FeatureKey
+      state: FeatureState
+    }) =>
+      (await getSettingsService()).updateFeature(actorUserId, key, {
+        audience,
+        state,
+      }),
   )
 }

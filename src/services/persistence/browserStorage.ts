@@ -3,6 +3,7 @@ export interface BrowserStorageEntry {
   format: 'legacy' | 'versioned'
   key: string
   schemaVersion: number | null
+  tenantId: string | null
 }
 
 export interface BrowserStorageDiagnostics {
@@ -38,6 +39,7 @@ export const browserStorage: BrowserStorage = {
           bytes: new Blob([window.localStorage.getItem(key) ?? '']).size,
           ...getStorageMetadata(window.localStorage.getItem(key)),
           key,
+          tenantId: getTenantId(key),
         }))
         .sort((left, right) => right.bytes - left.bytes)
       return {
@@ -52,6 +54,7 @@ export const browserStorage: BrowserStorage = {
           bytes: new Blob([JSON.stringify(value)]).size,
           ...getValueMetadata(value),
           key,
+          tenantId: getTenantId(key),
         }))
       return {
         available: false,
@@ -95,6 +98,10 @@ export const browserStorage: BrowserStorage = {
       // The dashboard remains usable when durable browser storage is blocked.
     }
   },
+}
+
+function getTenantId(key: string) {
+  return /^enterprise-operations-tenant-([^-]+)-/.exec(key)?.[1] ?? null
 }
 
 function getValueMetadata(value: unknown): Pick<

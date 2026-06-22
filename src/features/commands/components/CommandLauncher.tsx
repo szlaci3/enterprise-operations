@@ -25,6 +25,8 @@ import { commandSearchOptions } from '../queries/commandQueries'
 import type { CommandDefinition } from '../schemas/commandSchemas'
 import { commandRegistry } from '../services/commandRegistry'
 import { platformIconByKey } from '../../../app/platform/platformIcons'
+import { workspaceSnapshotOptions } from '../../tenancy/queries/tenancyQueries'
+import { featureIsAvailable } from '../../settings/utils/featureAvailability'
 
 const iconByKey: Record<CommandDefinition['icon'], LucideIcon> = {
   ...platformIconByKey,
@@ -56,6 +58,7 @@ export function CommandLauncher() {
   const navigate = useNavigate()
   const { accessQuery } = useAuthorization()
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
+  const workspaceQuery = useQuery(workspaceSnapshotOptions())
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -68,9 +71,17 @@ export function CommandLauncher() {
   const enabledFeatures = useMemo(
     () =>
       (settingsQuery.data?.features ?? [])
-        .filter((feature) => feature.state !== 'disabled')
+        .filter(
+          (feature) =>
+            workspaceQuery.data &&
+            featureIsAvailable(
+              settingsQuery.data?.features ?? [],
+              feature.key,
+              workspaceQuery.data.membership.role,
+            ),
+        )
         .map((feature) => feature.key),
-    [settingsQuery.data?.features],
+    [settingsQuery.data?.features, workspaceQuery.data],
   )
   const normalizedQuery = query.trim()
   const entitySearchQuery = useQuery({
@@ -79,7 +90,8 @@ export function CommandLauncher() {
       isOpen &&
       normalizedQuery.length >= 2 &&
       !accessQuery.isPending &&
-      !settingsQuery.isPending,
+      !settingsQuery.isPending &&
+      !workspaceQuery.isPending,
   })
 
   const items = useMemo<PaletteItem[]>(() => {

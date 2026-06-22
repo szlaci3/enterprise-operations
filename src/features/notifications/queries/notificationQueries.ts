@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import type { NotificationPreferencesFormValues } from '../schemas/notificationSchemas'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 async function getNotificationService() {
   const { notificationService } = await import(
@@ -13,7 +14,9 @@ async function getNotificationService() {
 }
 
 export const notificationKeys = {
-  all: ['notifications'] as const,
+  get all() {
+    return tenantQueryKey('notifications')
+  },
   list: (userId: string) => [...notificationKeys.all, 'list', userId] as const,
   preferences: (userId: string) =>
     [...notificationKeys.all, 'preferences', userId] as const,

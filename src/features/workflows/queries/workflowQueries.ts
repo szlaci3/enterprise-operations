@@ -8,9 +8,12 @@ import type {
   WorkflowFormValues,
 } from '../schemas/workflowSchemas'
 import { workflowService } from '../services/workflowService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const workflowKeys = {
-  all: ['workflows'] as const,
+  get all() {
+    return tenantQueryKey('workflows')
+  },
   detail: (id: string) => [...workflowKeys.all, 'detail', id] as const,
   list: () => [...workflowKeys.all, 'list'] as const,
   templates: () => [...workflowKeys.all, 'templates'] as const,

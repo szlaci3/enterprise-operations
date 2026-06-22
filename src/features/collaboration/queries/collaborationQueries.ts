@@ -11,9 +11,12 @@ import type {
   CollaborationCommentUpdate,
   CollaborationEntityType,
 } from '../schemas/collaborationSchemas'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const collaborationKeys = {
-  all: ['collaboration'] as const,
+  get all() {
+    return tenantQueryKey('collaboration')
+  },
   entity: (entityType: CollaborationEntityType, entityId: string) =>
     [...collaborationKeys.all, 'entity', entityType, entityId] as const,
 }

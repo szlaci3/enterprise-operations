@@ -11,8 +11,10 @@ import { settingsSnapshotOptions } from '../../features/settings/queries/setting
 import { currentSessionUserId } from '../session/currentSession'
 import { ConnectivitySynchronizer } from '../../features/offline/components/ConnectivitySynchronizer'
 import { RuntimeIncidentSynchronizer } from '../../features/diagnostics/components/RuntimeIncidentSynchronizer'
+import { useWorkspaceStore } from '../../features/tenancy/store/workspaceStore'
 
 function ThemeSynchronizer({ children }: { children: ReactNode }) {
+  useWorkspaceStore((state) => state.activeTenantId)
   const settingsQuery = useQuery(settingsSnapshotOptions(currentSessionUserId))
   const theme = settingsQuery.data?.personal.theme ?? 'system'
   const reducedMotion = settingsQuery.data?.personal.reducedMotion ?? false

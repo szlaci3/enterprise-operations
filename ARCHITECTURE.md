@@ -1062,6 +1062,68 @@ not sufficient.
 
 The application currently operates without a real backend.
 
+## Tenant and Workspace Boundary
+
+The simulated session has one stable identity and one active tenant context.
+Tenancy is modeled independently from managed-user records:
+
+```text
+Tenant catalog
+    + user-to-tenant membership and tenant role
+    + persisted active tenant
+    -> workspace snapshot
+```
+
+The tenancy catalog is a global versioned store because it determines which
+tenant repositories may be selected. The current user has an owner membership
+in Northstar Group and an administrator membership in Atlas Services.
+
+The active tenant is synchronously available through `tenantContext` so query
+keys and repositories can resolve ownership outside React. A Zustand workspace
+store exposes the same value to presentation components and persists changes
+through the context. The active-tenant record uses a versioned global envelope.
+
+Switching workspaces follows this order:
+
+```text
+cancel active queries
+    -> change active tenant
+    -> clear the QueryClient
+    -> navigate to /overview
+    -> render tenant-prefixed queries and repositories
+```
+
+Every feature query-key root is created through `tenantQueryKey`:
+
+```text
+['tenant', tenantId, domain, ...domainSegments]
+```
+
+This means a late result from an old workspace cannot satisfy a query in the
+new workspace even if both domains use the same entity identifier.
+
+Durable business entities do not duplicate `tenantId` on every frontend
+aggregate. Their repository namespace is the ownership boundary:
+
+```text
+enterprise-operations-tenant-{tenantId}-{domainKey}
+```
+
+This mirrors a backend repository or database partition while preserving the
+existing backend-ready domain shapes. A future network API would carry tenant
+context through authentication and request routing rather than trusting a
+client-supplied aggregate field.
+
+Global persistence is deliberately limited to:
+
+* tenant catalog and memberships
+* active tenant selection
+* device-level shell state
+
+Organization settings, access policy, notifications, search preferences,
+offline operations, diagnostics incidents, and every business aggregate are
+tenant-owned.
+
 Data flow:
 
 ```text
@@ -1368,6 +1430,16 @@ version raise `PersistenceMigrationError`; the original value remains intact.
 This intentionally replaces the former behavior where a schema mismatch could
 silently overwrite persisted user data with seeds.
 
+The versioned store resolves tenant scope at read and write time rather than
+construction time, so module-cached repository objects follow workspace
+changes. Global stores opt out explicitly with `scope: 'global'`.
+
+For the default Northstar tenant, a missing scoped store checks the historical
+unscoped key. If present, the payload is validated and migrated normally,
+written to the Northstar namespace, and only then removed from the legacy key.
+Migration failure preserves the source value. Other tenants never inspect
+unscoped storage.
+
 The department mock API persists the complete validated collection under a
 domain-specific versioned storage key. A genuinely missing collection is
 initialized with realistic seed data.
@@ -1428,6 +1500,12 @@ store. Seed initialization can preserve the theme from the former
 Zustand-persisted UI record. Notification preferences retain a dedicated
 legacy transformer that adds later subscription keys while preserving existing
 choices.
+
+Settings schema version two adds tenant-level rollout audience and prerequisite
+policy. Enabled features are available to all members. Pilot features can
+target all members or tenant administrators. A feature is unavailable when any
+declared prerequisite is unavailable. Availability is evaluated consistently
+by shell navigation, direct-route boundaries, embedded gates, and commands.
 
 The offline mock API persists validated operations under a dedicated storage
 key. Each task operation stores its authoritative base timestamp, optimistic

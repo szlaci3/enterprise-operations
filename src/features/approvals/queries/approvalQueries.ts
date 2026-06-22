@@ -8,9 +8,12 @@ import type {
   ApprovalRequestFormValues,
 } from '../schemas/approvalSchemas'
 import { approvalService } from '../services/approvalService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const approvalKeys = {
-  all: ['approvals'] as const,
+  get all() {
+    return tenantQueryKey('approvals')
+  },
   detail: (id: string) => [...approvalKeys.all, 'detail', id] as const,
   list: () => [...approvalKeys.all, 'list'] as const,
 }

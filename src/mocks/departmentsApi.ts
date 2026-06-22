@@ -3,6 +3,7 @@ import {
   departmentsSchema,
   type Department,
 } from '../features/departments/schemas/departmentSchemas'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const departmentsStorageKey = 'enterprise-operations-departments'
 
@@ -123,13 +124,36 @@ const seedDepartments: Department[] = [
   },
 ]
 
+const atlasDepartments: Department[] = [
+  {
+    code: 'ATLOPS',
+    costCenter: 'ATL-1000',
+    createdAt: '2026-04-01T09:00:00.000Z',
+    description:
+      'Coordinates Atlas service delivery, operational governance, and customer support execution.',
+    headcount: 36,
+    id: 'dept-atlas-operations',
+    name: 'Atlas Service Operations',
+    owner: {
+      email: 'jordan.lee@atlas.example',
+      id: 'owner-jordan-lee',
+      name: 'Jordan Lee',
+      title: 'Director, Service Operations',
+    },
+    parentDepartmentId: null,
+    status: 'active',
+    updatedAt: '2026-06-21T17:10:00.000Z',
+  },
+]
+
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
 const departmentsStore = createVersionedStore({
   key: departmentsStorageKey,
   schema: departmentsSchema,
-  seed: () => seedDepartments,
+  seed: () =>
+    getActiveTenantId() === 'atlas' ? atlasDepartments : seedDepartments,
   version: 1,
 })
 

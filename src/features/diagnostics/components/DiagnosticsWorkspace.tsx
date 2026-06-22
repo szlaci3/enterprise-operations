@@ -305,6 +305,7 @@ export function DiagnosticsWorkspace() {
                     {entry.format === 'versioned'
                       ? `schema v${entry.schemaVersion}`
                       : 'legacy format'}
+                    {entry.tenantId ? ` · ${entry.tenantId}` : ' · global'}
                   </p>
                 </div>
               ))}

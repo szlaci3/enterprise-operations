@@ -11,9 +11,12 @@ import type {
   DocumentVersionFormValues,
 } from '../schemas/documentSchemas'
 import { documentService } from '../services/documentService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const documentKeys = {
-  all: ['documents'] as const,
+  get all() {
+    return tenantQueryKey('documents')
+  },
   detail: (id: string) => [...documentKeys.all, 'detail', id] as const,
   entity: (link: DocumentLink) =>
     [...documentKeys.all, 'entity', link.entityType, link.entityId] as const,

@@ -3,6 +3,7 @@ import {
   type ReportDefinition,
 } from '../features/reports/schemas/reportSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const reportsStorageKey = 'enterprise-operations-report-definitions'
 
@@ -67,7 +68,7 @@ const delay = (milliseconds: number) =>
 const reportsStore = createVersionedStore({
   key: reportsStorageKey,
   schema: reportDefinitionsSchema,
-  seed: () => seedReports,
+  seed: () => (getActiveTenantId() === 'atlas' ? [] : seedReports),
   version: 1,
 })
 

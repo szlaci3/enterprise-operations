@@ -3,6 +3,7 @@ import {
   type DocumentRecord,
 } from '../features/documents/schemas/documentSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const documentsStorageKey = 'enterprise-operations-documents'
 
@@ -103,7 +104,7 @@ const delay = (milliseconds: number) =>
 const documentsStore = createVersionedStore({
   key: documentsStorageKey,
   schema: documentsSchema,
-  seed: () => seedDocuments,
+  seed: () => (getActiveTenantId() === 'atlas' ? [] : seedDocuments),
   version: 1,
 })
 

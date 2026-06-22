@@ -6,9 +6,12 @@ import {
 import type { PermissionKey } from '../../access/schemas/accessSchemas'
 import type { SearchRequest } from '../schemas/searchSchemas'
 import { searchService } from '../services/searchService'
+import { tenantQueryKey } from '../../tenancy/utils/tenantQueryKey'
 
 export const searchKeys = {
-  all: ['search'] as const,
+  get all() {
+    return tenantQueryKey('search')
+  },
   preferences: (userId: string) =>
     [...searchKeys.all, 'preferences', userId] as const,
   results: (request: SearchRequest, permissionKeys: PermissionKey[]) =>

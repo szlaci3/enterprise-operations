@@ -1,5 +1,9 @@
 import type { ZodType } from 'zod'
 import { browserStorage } from './browserStorage'
+import {
+  getActiveTenantId,
+  tenantStorageKey,
+} from '../../features/tenancy/services/tenantContext'
 
 interface PersistedEnvelope {
   data: unknown
@@ -16,6 +20,7 @@ interface VersionedStoreOptions<T> {
   obsoleteKeys?: string[]
   prepareLegacy?: (data: T) => T
   schema: ZodType<T>
+  scope?: 'global' | 'tenant'
   seed: () => T
   version: number
 }
@@ -49,6 +54,7 @@ export function createVersionedStore<T>({
   obsoleteKeys = [],
   prepareLegacy = (data) => data,
   schema,
+  scope = 'tenant',
   seed,
   version,
 }: VersionedStoreOptions<T>) {
@@ -56,12 +62,19 @@ export function createVersionedStore<T>({
     throw new Error(`Persistence store "${key}" requires a positive version.`)
   }
 
+  const resolveKey = (targetKey: string) =>
+    scope === 'tenant' ? tenantStorageKey(targetKey) : targetKey
   const removeObsoleteKeys = () =>
-    obsoleteKeys.forEach((obsoleteKey) => browserStorage.remove(obsoleteKey))
+    obsoleteKeys.forEach((obsoleteKey) => {
+      browserStorage.remove(resolveKey(obsoleteKey))
+      if (scope === 'tenant' && getActiveTenantId() === 'northstar') {
+        browserStorage.remove(obsoleteKey)
+      }
+    })
 
   const persist = (data: T) => {
     const validated = schema.parse(data)
-    browserStorage.write(key, {
+    browserStorage.write(resolveKey(key), {
       data: validated,
       schemaVersion: version,
       updatedAt: new Date().toISOString(),
@@ -71,7 +84,20 @@ export function createVersionedStore<T>({
   }
 
   const read = (): T => {
-    const stored = browserStorage.read(key)
+    const resolvedKey = resolveKey(key)
+    let stored = browserStorage.read(resolvedKey)
+    let migratedLegacyKey: string | null = null
+
+    if (
+      stored === null &&
+      scope === 'tenant' &&
+      getActiveTenantId() === 'northstar'
+    ) {
+      stored = browserStorage.read(key)
+      if (stored !== null) {
+        migratedLegacyKey = key
+      }
+    }
 
     if (stored === null) {
       return persist(seed())
@@ -80,12 +106,16 @@ export function createVersionedStore<T>({
     if (!isEnvelope(stored)) {
       const currentLegacy = schema.safeParse(stored)
       if (currentLegacy.success) {
-        return persist(prepareLegacy(currentLegacy.data))
+        const data = persist(prepareLegacy(currentLegacy.data))
+        if (migratedLegacyKey) browserStorage.remove(migratedLegacyKey)
+        return data
       }
 
       const migratedLegacy = migrateLegacy?.(stored)
       if (migratedLegacy !== undefined) {
-        return persist(migratedLegacy)
+        const data = persist(migratedLegacy)
+        if (migratedLegacyKey) browserStorage.remove(migratedLegacyKey)
+        return data
       }
 
       throw new PersistenceMigrationError(
@@ -125,16 +155,22 @@ export function createVersionedStore<T>({
     }
 
     if (stored.schemaVersion !== version) {
-      return persist(parsed.data)
+      const data = persist(parsed.data)
+      if (migratedLegacyKey) browserStorage.remove(migratedLegacyKey)
+      return data
     }
 
+    if (migratedLegacyKey) {
+      persist(parsed.data)
+      browserStorage.remove(migratedLegacyKey)
+    }
     removeObsoleteKeys()
     return parsed.data
   }
 
   return {
     read,
-    remove: () => browserStorage.remove(key),
+    remove: () => browserStorage.remove(resolveKey(key)),
     write: persist,
   }
 }

@@ -3,6 +3,7 @@ import {
   type WorkflowDefinition,
 } from '../features/workflows/schemas/workflowSchemas'
 import { createVersionedStore } from '../services/persistence/versionedStore'
+import { getActiveTenantId } from '../features/tenancy/services/tenantContext'
 
 const workflowsStorageKey = 'enterprise-operations-workflows'
 
@@ -158,7 +159,7 @@ const delay = (milliseconds: number) =>
 const workflowsStore = createVersionedStore({
   key: workflowsStorageKey,
   schema: workflowDefinitionsSchema,
-  seed: () => seedWorkflows,
+  seed: () => (getActiveTenantId() === 'atlas' ? [] : seedWorkflows),
   version: 1,
 })
 
