@@ -34,6 +34,10 @@ export const diagnosticsService = {
       offlineService.getSnapshot(),
     ])
     const storage = browserStorage.diagnose()
+    const versionedStoreCount = storage.entries.filter(
+      (entry) => entry.format === 'versioned',
+    ).length
+    const legacyStoreCount = storage.entries.length - versionedStoreCount
     const recentIncidents = incidents.filter(
       (incident) =>
         Date.now() - new Date(incident.createdAt).getTime() < 24 * 60 * 60_000,
@@ -50,6 +54,14 @@ export const diagnosticsService = {
           value: storage.available
             ? `${storage.entries.length} stores · ${storageMegabytes.toFixed(2)} MB`
             : 'Using in-memory fallback',
+        },
+        {
+          description:
+            'Versioned envelopes make schema upgrades explicit and preserve invalid data instead of silently reseeding it.',
+          id: 'persistence-schemas',
+          label: 'Persistence schemas',
+          status: legacyStoreCount > 0 ? 'warning' : 'healthy',
+          value: `${versionedStoreCount} versioned · ${legacyStoreCount} legacy`,
         },
         {
           description:

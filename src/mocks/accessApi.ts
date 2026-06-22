@@ -6,18 +6,10 @@ import {
   type Role,
   type RoleAssignment,
 } from '../features/access/schemas/accessSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const rolesStorageKey = 'enterprise-operations-roles'
 const assignmentsStorageKey = 'enterprise-operations-role-assignments'
-const collaborationPermissionMigrationKey =
-  'enterprise-operations-collaboration-permissions-v1'
-const documentPermissionMigrationKey =
-  'enterprise-operations-document-permissions-v1'
-const settingsPermissionMigrationKey =
-  'enterprise-operations-settings-permissions-v1'
-const diagnosticsPermissionMigrationKey =
-  'enterprise-operations-diagnostics-permissions-v1'
 
 const permissionCatalog: Permission[] = [
   {
@@ -308,10 +300,44 @@ const seedAssignments: RoleAssignment[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
+function prepareLegacyRoles(roles: Role[]): Role[] {
+  return roles.map((role) => {
+    const seedRole = seedRoles.find((seed) => seed.id === role.id)
+    return seedRole
+      ? {
+          ...role,
+          permissionKeys: [
+            ...new Set([...role.permissionKeys, ...seedRole.permissionKeys]),
+          ],
+        }
+      : role
+  })
+}
+
+const rolesStore = createVersionedStore({
+  key: rolesStorageKey,
+  obsoleteKeys: [
+    'enterprise-operations-collaboration-permissions-v1',
+    'enterprise-operations-document-permissions-v1',
+    'enterprise-operations-settings-permissions-v1',
+    'enterprise-operations-diagnostics-permissions-v1',
+  ],
+  prepareLegacy: prepareLegacyRoles,
+  schema: rolesSchema,
+  seed: () => seedRoles,
+  version: 1,
+})
+
+const assignmentsStore = createVersionedStore({
+  key: assignmentsStorageKey,
+  schema: roleAssignmentsSchema,
+  seed: () => seedAssignments,
+  version: 1,
+})
+
 function readRoles(): Role[] {
-  const persisted = rolesSchema.safeParse(browserStorage.read(rolesStorageKey))
-  if (persisted.success) {
-    let synchronized = persisted.data.map((role) => {
+  const roles = rolesStore.read()
+  const synchronized = roles.map((role) => {
       const systemRole = seedRoles.find(
         (seedRole) => seedRole.id === role.id && seedRole.isSystem,
       )
@@ -323,93 +349,19 @@ function readRoles(): Role[] {
             permissionKeys: systemRole.permissionKeys,
           }
         : role
-    })
-    if (browserStorage.read(collaborationPermissionMigrationKey) !== true) {
-      synchronized = synchronized.map((role) => {
-        const seedRole = seedRoles.find((seed) => seed.id === role.id)
-        const collaborationKeys =
-          seedRole?.permissionKeys.filter((key) =>
-            key.startsWith('collaboration.'),
-          ) ?? []
-        return {
-          ...role,
-          permissionKeys: [
-            ...new Set([...role.permissionKeys, ...collaborationKeys]),
-          ],
-        }
-      })
-      browserStorage.write(collaborationPermissionMigrationKey, true)
-    }
-    if (browserStorage.read(documentPermissionMigrationKey) !== true) {
-      synchronized = synchronized.map((role) => {
-        const seedRole = seedRoles.find((seed) => seed.id === role.id)
-        const documentKeys =
-          seedRole?.permissionKeys.filter((key) =>
-            key.startsWith('documents.'),
-          ) ?? []
-        return {
-          ...role,
-          permissionKeys: [
-            ...new Set([...role.permissionKeys, ...documentKeys]),
-          ],
-        }
-      })
-      browserStorage.write(documentPermissionMigrationKey, true)
-    }
-    if (browserStorage.read(settingsPermissionMigrationKey) !== true) {
-      synchronized = synchronized.map((role) => {
-        const seedRole = seedRoles.find((seed) => seed.id === role.id)
-        const settingsKeys =
-          seedRole?.permissionKeys.filter((key) =>
-            key.startsWith('settings.'),
-          ) ?? []
-        return {
-          ...role,
-          permissionKeys: [
-            ...new Set([...role.permissionKeys, ...settingsKeys]),
-          ],
-        }
-      })
-      browserStorage.write(settingsPermissionMigrationKey, true)
-    }
-    if (browserStorage.read(diagnosticsPermissionMigrationKey) !== true) {
-      synchronized = synchronized.map((role) => {
-        const seedRole = seedRoles.find((seed) => seed.id === role.id)
-        const diagnosticKeys =
-          seedRole?.permissionKeys.filter((key) =>
-            key.startsWith('diagnostics.'),
-          ) ?? []
-        return {
-          ...role,
-          permissionKeys: [
-            ...new Set([...role.permissionKeys, ...diagnosticKeys]),
-          ],
-        }
-      })
-      browserStorage.write(diagnosticsPermissionMigrationKey, true)
-    }
-    browserStorage.write(rolesStorageKey, synchronized)
-    return synchronized
+  })
+  if (JSON.stringify(roles) !== JSON.stringify(synchronized)) {
+    rolesStore.write(synchronized)
   }
-  browserStorage.write(rolesStorageKey, seedRoles)
-  return seedRoles
+  return synchronized
 }
 
 function writeRoles(roles: Role[]) {
-  browserStorage.write(rolesStorageKey, roles)
-}
-
-function readAssignments(): RoleAssignment[] {
-  const persisted = roleAssignmentsSchema.safeParse(
-    browserStorage.read(assignmentsStorageKey),
-  )
-  if (persisted.success) return persisted.data
-  browserStorage.write(assignmentsStorageKey, seedAssignments)
-  return seedAssignments
+  rolesStore.write(roles)
 }
 
 function writeAssignments(assignments: RoleAssignment[]) {
-  browserStorage.write(assignmentsStorageKey, assignments)
+  assignmentsStore.write(assignments)
 }
 
 export async function listPermissionsApi(): Promise<unknown> {
@@ -443,13 +395,15 @@ export async function deleteRoleApi(id: string): Promise<void> {
   await delay(320)
   writeRoles(readRoles().filter((role) => role.id !== id))
   writeAssignments(
-    readAssignments().filter((assignment) => assignment.roleId !== id),
+    assignmentsStore
+      .read()
+      .filter((assignment) => assignment.roleId !== id),
   )
 }
 
 export async function listRoleAssignmentsApi(): Promise<unknown> {
   await delay(180)
-  return readAssignments()
+  return assignmentsStore.read()
 }
 
 export async function replaceUserRoleAssignmentsApi(
@@ -457,7 +411,7 @@ export async function replaceUserRoleAssignmentsApi(
   roleIds: string[],
 ): Promise<unknown> {
   await delay(340)
-  const retained = readAssignments().filter(
+  const retained = assignmentsStore.read().filter(
     (assignment) => assignment.userId !== userId,
   )
   const assignedAt = new Date().toISOString()

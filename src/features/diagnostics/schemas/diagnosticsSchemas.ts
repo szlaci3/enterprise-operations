@@ -29,7 +29,9 @@ export const diagnosticsSnapshotSchema = z.object({
     entries: z.array(
       z.object({
         bytes: z.number().int().nonnegative(),
+        format: z.enum(['legacy', 'versioned']),
         key: z.string(),
+        schemaVersion: z.number().int().positive().nullable(),
       }),
     ),
     totalBytes: z.number().int().nonnegative(),

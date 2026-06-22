@@ -2,7 +2,7 @@ import {
   reportDefinitionsSchema,
   type ReportDefinition,
 } from '../features/reports/schemas/reportSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const reportsStorageKey = 'enterprise-operations-report-definitions'
 
@@ -64,34 +64,32 @@ const seedReports: ReportDefinition[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readReports(): ReportDefinition[] {
-  const persisted = reportDefinitionsSchema.safeParse(
-    browserStorage.read(reportsStorageKey),
-  )
-  if (persisted.success) return persisted.data
-  browserStorage.write(reportsStorageKey, seedReports)
-  return seedReports
-}
+const reportsStore = createVersionedStore({
+  key: reportsStorageKey,
+  schema: reportDefinitionsSchema,
+  seed: () => seedReports,
+  version: 1,
+})
 
 function writeReports(reports: ReportDefinition[]) {
-  browserStorage.write(reportsStorageKey, reports)
+  reportsStore.write(reports)
 }
 
 export async function listReportsApi(): Promise<unknown> {
   await delay(260)
-  return readReports()
+  return reportsStore.read()
 }
 
 export async function getReportApi(id: string): Promise<unknown> {
   await delay(200)
-  return readReports().find((report) => report.id === id) ?? null
+  return reportsStore.read().find((report) => report.id === id) ?? null
 }
 
 export async function createReportApi(
   report: ReportDefinition,
 ): Promise<unknown> {
   await delay(380)
-  writeReports([...readReports(), report])
+  writeReports([...reportsStore.read(), report])
   return report
 }
 
@@ -100,12 +98,12 @@ export async function updateReportApi(
 ): Promise<unknown> {
   await delay(380)
   writeReports(
-    readReports().map((item) => (item.id === report.id ? report : item)),
+    reportsStore.read().map((item) => (item.id === report.id ? report : item)),
   )
   return report
 }
 
 export async function deleteReportApi(id: string): Promise<void> {
   await delay(320)
-  writeReports(readReports().filter((report) => report.id !== id))
+  writeReports(reportsStore.read().filter((report) => report.id !== id))
 }

@@ -301,7 +301,10 @@ export function DiagnosticsWorkspace() {
                 <div key={entry.key}>
                   <p className="truncate text-xs font-semibold">{entry.key}</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {formatBytes(entry.bytes)}
+                    {formatBytes(entry.bytes)} ·{' '}
+                    {entry.format === 'versioned'
+                      ? `schema v${entry.schemaVersion}`
+                      : 'legacy format'}
                   </p>
                 </div>
               ))}

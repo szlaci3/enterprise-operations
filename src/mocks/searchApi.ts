@@ -3,31 +3,29 @@ import {
   searchPreferencesSchema,
   type SearchPreferences,
 } from '../features/search/schemas/searchSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const searchPreferencesKey = 'enterprise-operations-search-preferences'
 
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readPreferences(): SearchPreferences[] {
-  const persisted = searchPreferencesListSchema.safeParse(
-    browserStorage.read(searchPreferencesKey),
-  )
-  if (persisted.success) return persisted.data
-  browserStorage.write(searchPreferencesKey, [])
-  return []
-}
+const searchPreferencesStore = createVersionedStore({
+  key: searchPreferencesKey,
+  schema: searchPreferencesListSchema,
+  seed: () => [],
+  version: 1,
+})
 
 function writePreferences(preferences: SearchPreferences[]) {
-  browserStorage.write(searchPreferencesKey, preferences)
+  searchPreferencesStore.write(preferences)
 }
 
 export async function getSearchPreferencesApi(
   userId: string,
 ): Promise<unknown> {
   await delay(120)
-  const existing = readPreferences().find(
+  const existing = searchPreferencesStore.read().find(
     (preference) => preference.userId === userId,
   )
   if (existing) return existing
@@ -36,7 +34,7 @@ export async function getSearchPreferencesApi(
     savedSearches: [],
     userId,
   })
-  writePreferences([...readPreferences(), preferences])
+  writePreferences([...searchPreferencesStore.read(), preferences])
   return preferences
 }
 
@@ -45,7 +43,9 @@ export async function updateSearchPreferencesApi(
 ): Promise<unknown> {
   await delay(220)
   writePreferences([
-    ...readPreferences().filter((item) => item.userId !== preferences.userId),
+    ...searchPreferencesStore
+      .read()
+      .filter((item) => item.userId !== preferences.userId),
     preferences,
   ])
   return preferences

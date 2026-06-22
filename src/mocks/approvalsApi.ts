@@ -2,7 +2,7 @@ import {
   approvalRequestsSchema,
   type ApprovalRequest,
 } from '../features/approvals/schemas/approvalSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const approvalsStorageKey = 'enterprise-operations-approvals'
 
@@ -155,36 +155,32 @@ const seedApprovals: ApprovalRequest[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readApprovals(): ApprovalRequest[] {
-  const persisted = approvalRequestsSchema.safeParse(
-    browserStorage.read(approvalsStorageKey),
-  )
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(approvalsStorageKey, seedApprovals)
-  return seedApprovals
-}
+const approvalsStore = createVersionedStore({
+  key: approvalsStorageKey,
+  schema: approvalRequestsSchema,
+  seed: () => seedApprovals,
+  version: 1,
+})
 
 function writeApprovals(approvals: ApprovalRequest[]) {
-  browserStorage.write(approvalsStorageKey, approvals)
+  approvalsStore.write(approvals)
 }
 
 export async function listApprovalsApi(): Promise<unknown> {
   await delay(300)
-  return readApprovals()
+  return approvalsStore.read()
 }
 
 export async function getApprovalApi(id: string): Promise<unknown> {
   await delay(220)
-  return readApprovals().find((approval) => approval.id === id) ?? null
+  return approvalsStore.read().find((approval) => approval.id === id) ?? null
 }
 
 export async function createApprovalApi(
   approval: ApprovalRequest,
 ): Promise<unknown> {
   await delay(420)
-  writeApprovals([...readApprovals(), approval])
+  writeApprovals([...approvalsStore.read(), approval])
   return approval
 }
 
@@ -193,7 +189,9 @@ export async function updateApprovalApi(
 ): Promise<unknown> {
   await delay(400)
   writeApprovals(
-    readApprovals().map((item) => (item.id === approval.id ? approval : item)),
+    approvalsStore
+      .read()
+      .map((item) => (item.id === approval.id ? approval : item)),
   )
   return approval
 }

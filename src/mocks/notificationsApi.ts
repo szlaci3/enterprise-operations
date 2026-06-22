@@ -6,7 +6,7 @@ import {
   type NotificationPreferences,
   type NotificationStore,
 } from '../features/notifications/schemas/notificationSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const notificationStoreKey = 'enterprise-operations-notification-store'
 const notificationPreferencesKey =
@@ -48,30 +48,23 @@ const migratablePreferencesSchema = z.array(
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readStore(): NotificationStore {
-  const persisted = notificationStoreSchema.safeParse(
-    browserStorage.read(notificationStoreKey),
-  )
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(notificationStoreKey, emptyStore)
-  return emptyStore
-}
+const notificationStore = createVersionedStore({
+  key: notificationStoreKey,
+  schema: notificationStoreSchema,
+  seed: () => emptyStore,
+  version: 1,
+})
 
 function writeStore(store: NotificationStore) {
-  browserStorage.write(notificationStoreKey, store)
+  notificationStore.write(store)
 }
 
-function readPreferences(): NotificationPreferences[] {
-  const stored = browserStorage.read(notificationPreferencesKey)
-  const persisted = notificationPreferencesListSchema.safeParse(stored)
-  if (persisted.success) {
-    return persisted.data
-  }
-  const migratable = migratablePreferencesSchema.safeParse(stored)
-  if (migratable.success) {
-    const migrated = notificationPreferencesListSchema.parse(
+const notificationPreferencesStore = createVersionedStore({
+  key: notificationPreferencesKey,
+  migrateLegacy: (stored) => {
+    const migratable = migratablePreferencesSchema.safeParse(stored)
+    if (!migratable.success) return undefined
+    return notificationPreferencesListSchema.parse(
       migratable.data.map((preference) => ({
         ...preference,
         subscriptions: {
@@ -80,20 +73,19 @@ function readPreferences(): NotificationPreferences[] {
         },
       })),
     )
-    browserStorage.write(notificationPreferencesKey, migrated)
-    return migrated
-  }
-  browserStorage.write(notificationPreferencesKey, [])
-  return []
-}
+  },
+  schema: notificationPreferencesListSchema,
+  seed: () => [],
+  version: 1,
+})
 
 function writePreferences(preferences: NotificationPreferences[]) {
-  browserStorage.write(notificationPreferencesKey, preferences)
+  notificationPreferencesStore.write(preferences)
 }
 
 export async function getNotificationStoreApi(): Promise<unknown> {
   await delay(180)
-  return readStore()
+  return notificationStore.read()
 }
 
 export async function replaceNotificationStoreApi(
@@ -106,14 +98,14 @@ export async function replaceNotificationStoreApi(
 
 export async function listNotificationPreferencesApi(): Promise<unknown> {
   await delay(140)
-  return readPreferences()
+  return notificationPreferencesStore.read()
 }
 
 export async function getNotificationPreferencesApi(
   userId: string,
 ): Promise<unknown> {
   await delay(140)
-  const existing = readPreferences().find(
+  const existing = notificationPreferencesStore.read().find(
     (preference) => preference.userId === userId,
   )
   if (existing) {
@@ -126,7 +118,7 @@ export async function getNotificationPreferencesApi(
     updatedAt: '2026-01-01T00:00:00.000Z',
     userId,
   })
-  writePreferences([...readPreferences(), preferences])
+  writePreferences([...notificationPreferencesStore.read(), preferences])
   return preferences
 }
 
@@ -134,7 +126,7 @@ export async function updateNotificationPreferencesApi(
   preferences: NotificationPreferences,
 ): Promise<unknown> {
   await delay(260)
-  const current = readPreferences()
+  const current = notificationPreferencesStore.read()
   writePreferences([
     ...current.filter((item) => item.userId !== preferences.userId),
     preferences,

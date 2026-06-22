@@ -2,7 +2,7 @@ import {
   tasksSchema,
   type Task,
 } from '../features/tasks/schemas/taskSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const tasksStorageKey = 'enterprise-operations-tasks'
 
@@ -123,37 +123,37 @@ const seedTasks: Task[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readTasks(): Task[] {
-  const persisted = tasksSchema.safeParse(browserStorage.read(tasksStorageKey))
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(tasksStorageKey, seedTasks)
-  return seedTasks
-}
+const tasksStore = createVersionedStore({
+  key: tasksStorageKey,
+  schema: tasksSchema,
+  seed: () => seedTasks,
+  version: 1,
+})
 
 function writeTasks(tasks: Task[]) {
-  browserStorage.write(tasksStorageKey, tasks)
+  tasksStore.write(tasks)
 }
 
 export async function listTasksApi(): Promise<unknown> {
   await delay(300)
-  return readTasks()
+  return tasksStore.read()
 }
 
 export async function getTaskApi(id: string): Promise<unknown> {
   await delay(220)
-  return readTasks().find((task) => task.id === id) ?? null
+  return tasksStore.read().find((task) => task.id === id) ?? null
 }
 
 export async function createTaskApi(task: Task): Promise<unknown> {
   await delay(400)
-  writeTasks([...readTasks(), task])
+  writeTasks([...tasksStore.read(), task])
   return task
 }
 
 export async function updateTaskApi(task: Task): Promise<unknown> {
   await delay(400)
-  writeTasks(readTasks().map((item) => (item.id === task.id ? task : item)))
+  writeTasks(
+    tasksStore.read().map((item) => (item.id === task.id ? task : item)),
+  )
   return task
 }

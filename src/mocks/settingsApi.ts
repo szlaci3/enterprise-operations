@@ -5,6 +5,7 @@ import {
 } from '../features/settings/schemas/settingsSchemas'
 import { z } from 'zod'
 import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const settingsStorageKey = 'enterprise-operations-settings'
 const legacyUiStorageKey = 'enterprise-operations-ui'
@@ -62,15 +63,11 @@ const seedStore: SettingsStore = {
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readStore(): SettingsStore {
-  const persisted = settingsStoreSchema.safeParse(
-    browserStorage.read(settingsStorageKey),
-  )
-  if (persisted.success) return persisted.data
+function seedSettingsStore(): SettingsStore {
   const legacyUi = legacyUiSchema.safeParse(
     browserStorage.read(legacyUiStorageKey),
   )
-  const migratedStore: SettingsStore = legacyUi.success
+  return legacyUi.success
     ? {
         ...seedStore,
         personal: [
@@ -86,19 +83,24 @@ function readStore(): SettingsStore {
         ],
       }
     : seedStore
-  browserStorage.write(settingsStorageKey, migratedStore)
-  return migratedStore
 }
+
+const settingsStore = createVersionedStore({
+  key: settingsStorageKey,
+  obsoleteKeys: [legacyUiStorageKey],
+  schema: settingsStoreSchema,
+  seed: seedSettingsStore,
+  version: 1,
+})
 
 export async function getSettingsStoreApi(): Promise<unknown> {
   await delay(180)
-  return readStore()
+  return settingsStore.read()
 }
 
 export async function replaceSettingsStoreApi(
   store: SettingsStore,
 ): Promise<unknown> {
   await delay(320)
-  browserStorage.write(settingsStorageKey, store)
-  return store
+  return settingsStore.write(store)
 }

@@ -10,35 +10,94 @@ The roadmap is intentionally long-term and should be continuously updated as the
 
 ---
 
+# Product and Architecture Audit
+
+Audit completed June 22, 2026 after M1–M20.
+
+## What Is Working Well
+
+* Domain-oriented feature boundaries keep schemas, services, queries, and
+  presentation ownership clear.
+* Zod-validated transport boundaries, strict TypeScript, React Hook Form, and
+  service-level business rules provide a credible backend-ready shape.
+* Tasks, approvals, workflows, documents, collaboration, notifications, audit,
+  reporting, analytics, offline synchronization, and diagnostics have meaningful
+  behavior rather than placeholder screens.
+* Permission gates, route-level lazy loading, bounded rendering, accessible
+  chart alternatives, error boundaries, and runtime diagnostics establish a
+  strong production-oriented foundation.
+* The application builds and lints cleanly, and the initial application-owned
+  bundle remains small after milestone M19.
+
+## Highest-Value Gaps
+
+* Product breadth is ahead of workflow coherence. Several modules are useful in
+  isolation, but the platform lacks a small number of deep operating loops that
+  connect intake, commitments, response, evidence, review, and learning.
+* Organization and session assumptions are single-tenant and code-owned.
+  Organization identity, data ownership, query isolation, rollout targeting,
+  and workspace switching are not yet modeled.
+* Shared UI primitives are too narrow for the number of management surfaces.
+  Filters, empty states, form fields, tables, bulk actions, timelines, and
+  detail-page sections repeat local patterns and can drift.
+* Feature configuration supports only three modules and organization-wide
+  enabled/pilot/disabled states. It has no cohorts, prerequisites, or consistent
+  module registry shared by routing, navigation, commands, and administration.
+* Saved searches exist, but operational lists do not share a saved-view model
+  for filters, sorting, columns, density, ownership, and defaults.
+* Audit coverage is projection-specific rather than platform-wide. Settings
+  changes, documents, collaboration, identity, access, and future operational
+  domains need one richer evidence model with correlation and change context.
+* Browser persistence was unversioned and schema mismatch could silently reseed
+  a store. M21 resolves this prerequisite before Phase 2 changes domain models.
+* There is no automated test runner or regression suite. The current build and
+  lint checks cannot protect business invariants, migrations, or critical
+  cross-domain workflows.
+* Accessibility has good foundations but lacks systematic focus, announcement,
+  keyboard, contrast, and reduced-motion verification across repeated patterns.
+* Performance work is strong at the bundle and DOM layers, but full-collection
+  mock reads and cross-domain joins will need indexed/paginated service
+  contracts as data volume and tenant scope grow.
+
+## Phase 2 Product Direction
+
+Phase 2 will deepen the platform around governed operational lifecycles:
+
+```text
+Demand or control obligation
+    → owned work and service commitment
+    → SLA monitoring and escalation
+    → incident or exception response
+    → evidence and audit history
+    → review, reporting, and improvement
+```
+
+New breadth is accepted only when it strengthens this operating loop or the
+platform foundations required to support it.
+
+---
+
 # Current Phase
 
-## Phase 3 – Operational Resilience
+## Phase 2 – Enterprise Operations at Scale
 
 Status: ACTIVE
 
-Active Milestone: M21 – Incident Management
+Active Milestone: M22 – Platform Experience System
 
 Objective:
 
-Establish governed incident intake, ownership, severity, response timelines,
-service impact, and post-incident learning.
-
-Success Criteria:
-
-* Incidents have durable ownership, severity, service impact, and lifecycle
-* Response work connects to operational tasks and governed evidence
-* Timelines preserve actor-attributed response and resolution activity
-* Reporting and analytics can consume incident outcomes
+Turn the broad M1–M20 capability set into a coherent, evolvable enterprise
+platform with consistent interaction patterns, tenant-aware boundaries, deep
+operational workflows, governed evidence, and regression protection.
 
 Previous Phase:
 
-* Phase 2 – Core Operations completed June 21, 2026
-* Organization, access, workflows, approvals, tasks, communication, audit,
-  reporting, analytics, search, collaboration, documents, settings,
-  productivity, offline resilience, performance, and diagnostics are operational
-* Phase 1 – Foundation completed June 20, 2026
-* Application shell, query layer, domain structure, mock API infrastructure,
-  local persistence, and the first business-facing dashboard are operational
+* Phase 1 – Foundation and Core Operations completed June 21, 2026
+* M1–M20 delivered the shell, organization and access model, workflows,
+  approvals, tasks, communication, audit, reporting, analytics, search,
+  collaboration, documents, settings, productivity, offline resilience,
+  performance hardening, and diagnostics
 
 ---
 
@@ -670,21 +729,271 @@ Delivered:
 
 ---
 
-## M21 – Incident Management
+## M21 – Versioned Persistence and Migration Foundation
 
-Status: Next
+Status: Completed (June 22, 2026)
 
-Features:
+Objective:
 
-* Incident intake
-* Severity and service impact
-* Response ownership
-* Incident timelines
-* Post-incident reviews
+Make local data evolution explicit and safe before Phase 2 introduces richer
+domain models and tenant boundaries.
 
-Deliverables:
+Delivered:
 
-* Operational incident response foundation
+* Reusable typed versioned-store abstraction over the browser persistence
+  adapter
+* Schema-version envelopes with update timestamps for every durable domain
+  store
+* Automatic in-place wrapping of valid M1–M20 legacy payloads without data loss
+* Ordered migration hooks for future schema versions
+* Dedicated legacy transformation support for historical notification
+  preferences, settings theme state, and seeded role capability additions
+* Strict handling of unsupported, invalid, or newer persisted schemas without
+  silently overwriting the original payload
+* Seed initialization only for genuinely missing stores
+* Validated writes at the persistence boundary
+* Diagnostics metadata showing versioned versus legacy stores and schema
+  versions
+* Removal of one-off permission migration marker behavior in favor of
+  deterministic legacy preparation and code-owned system-role synchronization
+
+---
+
+## M22 – Platform Experience System
+
+Status: Active
+
+Objective:
+
+Establish shared, accessible patterns for dense enterprise workspaces before
+adding more operational domains.
+
+Planned Scope:
+
+* Shared field, filter bar, empty state, data table, pagination, timeline,
+  detail section, and destructive-confirmation patterns
+* A typed module registry shared by navigation, commands, feature availability,
+  and route metadata
+* Consistent permission and feature boundaries on all management routes
+* URL-addressable list state and predictable loading, empty, error, and refresh
+  behavior
+* Keyboard and focus contracts for overlays, mobile navigation, tables, and
+  management actions
+
+Exit Criteria:
+
+* Existing high-traffic task, approval, user, and department surfaces use the
+  shared patterns
+* Adding a module no longer requires duplicating platform metadata in several
+  unrelated files
+* Direct-route authorization behavior is consistent across domains
+
+---
+
+## M23 – Tenant and Workspace Boundaries
+
+Status: Planned
+
+Objective:
+
+Model organization membership and isolate all server-like data by active
+workspace without pretending frontend controls are a security boundary.
+
+Planned Scope:
+
+* Tenant, membership, and active-workspace contracts
+* Tenant-scoped persistence keys and TanStack Query keys
+* Workspace switcher with query cancellation and cache isolation
+* Tenant-aware organization settings, roles, feature configuration, and audit
+* Migration of the existing Northstar data set into the default tenant
+* Feature rollout cohorts and tenant-level prerequisites
+
+Exit Criteria:
+
+* Switching workspaces cannot leak cached or persisted records across tenants
+* All durable business records have an explicit tenant ownership strategy
+* Current single-tenant data upgrades without destructive reset
+
+---
+
+## M24 – Saved Views and Advanced Operational Search
+
+Status: Planned
+
+Objective:
+
+Create one reusable discovery model for repeated operational work.
+
+Planned Scope:
+
+* Shared filter and sort expression contracts
+* Personal and shared saved views with ownership, defaults, and visibility
+* Configurable columns and density for high-volume queues
+* Faceted search, recent filters, and cross-domain result refinement
+* Permission-aware view sharing and canonical URL state
+
+Exit Criteria:
+
+* Tasks, approvals, audit, users, documents, and future incident queues consume
+  the same saved-view foundation
+* Saved views survive reload and can be shared without exposing unauthorized
+  records
+
+---
+
+## M25 – Service Catalog and SLA Commitments
+
+Status: Planned
+
+Objective:
+
+Give operational work explicit service ownership, targets, calendars, and
+breach semantics.
+
+Planned Scope:
+
+* Service catalog, owners, support tiers, and operating calendars
+* Response and resolution targets by priority and request type
+* SLA clocks with pause/resume rules and warning thresholds
+* Breach escalation and reason capture
+* Task and approval linkage, dashboards, saved views, audit, and reporting
+
+Exit Criteria:
+
+* SLA state is derived consistently from governed service policy and lifecycle
+  events
+* Breaches and exceptions are explainable, attributable, and reportable
+
+---
+
+## M26 – Incident Management and Response
+
+Status: Planned
+
+Objective:
+
+Deliver a complete incident lifecycle built on service commitments rather than
+an isolated incident list.
+
+Planned Scope:
+
+* Incident intake, severity, affected services, impact, and commander ownership
+* Triage, investigation, mitigation, monitoring, resolution, and closure states
+* Response team roles, tasks, communications, and evidence
+* SLA-aware acknowledgements and escalation
+* Actor-attributed incident timeline and stakeholder updates
+* Post-incident review with actions linked to operational tasks
+
+Exit Criteria:
+
+* One incident can be followed from declaration through review and remediation
+* Incident outcomes feed audit, search, notifications, analytics, and reporting
+
+---
+
+## M27 – Compliance Review Cycles
+
+Status: Planned
+
+Objective:
+
+Model recurring control reviews as evidence-backed operational workflows.
+
+Planned Scope:
+
+* Control catalog, owners, review frequency, and applicability
+* Review-cycle generation and assignment
+* Evidence requests linked to governed documents and operational records
+* Findings, remediation tasks, exceptions, and approval
+* Due, overdue, and escalation policy
+* Reviewer attestation and immutable cycle history
+
+Exit Criteria:
+
+* A review cycle preserves obligation, evidence, decisions, findings, and
+  remediation in one traceable lifecycle
+
+---
+
+## M28 – Unified Audit and Evidence Graph
+
+Status: Planned
+
+Objective:
+
+Evolve audit from selected event projections into a platform-wide evidence
+model.
+
+Planned Scope:
+
+* Correlation, causation, tenant, actor, entity, and request context
+* Field-level before/after changes for mutable aggregates
+* Coverage for identity, access, documents, collaboration, settings, SLA,
+  incidents, and compliance
+* Evidence links connecting records, documents, approvals, and review outcomes
+* Retention policy execution and export manifests
+
+Exit Criteria:
+
+* Critical mutations across all governed domains produce a normalized audit
+  record
+* Investigators can reconstruct a business outcome without reading unrelated
+  storage structures
+
+---
+
+## M29 – Automated Testing and Reliability Strategy
+
+Status: Planned
+
+Objective:
+
+Protect business invariants and Phase 2 workflows with a proportionate test
+pyramid.
+
+Planned Scope:
+
+* Vitest and Testing Library foundation
+* Unit tests for schemas, migrations, state transitions, SLA clocks, and
+  permission evaluation
+* Service-level integration tests using deterministic persistence and time
+* Critical user-flow tests for approvals, incidents, compliance, and tenant
+  switching
+* Accessibility assertions for shared platform components
+* CI-quality build, lint, test, and focused coverage thresholds
+
+Exit Criteria:
+
+* Critical business workflows and all persistence migrations have automated
+  regression protection
+* Tests run deterministically without relying on production seed side effects
+
+---
+
+## M30 – Scale, Accessibility, and Production Readiness
+
+Status: Planned
+
+Objective:
+
+Harden the completed Phase 2 operating loops for larger data volumes and
+broader enterprise use.
+
+Planned Scope:
+
+* Paginated/indexed mock API contracts and query cancellation
+* Performance budgets and route-level bundle monitoring
+* Systematic WCAG-focused keyboard, focus, announcement, contrast, and motion
+  review
+* Localization-ready formatting and time-zone-safe SLA calculations
+* Data export/import recovery, migration observability, and support runbooks
+* Failure injection for latency, authorization, storage, and synchronization
+
+Exit Criteria:
+
+* Core workflows remain usable under high record counts, degraded conditions,
+  keyboard-only operation, and reduced-motion preferences
+* Phase 2 has documented operational and recovery expectations
 
 ---
 
@@ -694,54 +1003,50 @@ These may occur throughout multiple milestones.
 
 ## Design System
 
-Potential Enhancements:
+Phase 2 Direction:
 
-* Component library
-* Consistent spacing
-* Typography system
-* Accessibility improvements
+* Shared patterns are introduced through M22 and adopted incrementally
+* New primitives require semantic and keyboard contracts, not visual styling
+  alone
+* Domain-specific presentation remains inside features when abstraction would
+  erase meaningful workflow differences
 
 ---
 
 ## Developer Experience
 
-Potential Enhancements:
+Phase 2 Direction:
 
-* Shared utilities
-* Testing infrastructure
-* Code generation
-* Development tooling
+* Testing infrastructure is delivered in M29 after persistence and shared UI
+  seams are stable
+* Build and lint remain mandatory on every milestone
+* Code generation is introduced only where a stable repeated contract exists
 
 ---
 
 ## Data Modeling
 
-Potential Enhancements:
+Phase 2 Direction:
 
-* Richer entity relationships
-* Derived data
-* Aggregations
-* Simulated backend behaviors
+* Tenant ownership and service policy become explicit
+* Lifecycle events remain append-only where attribution matters
+* Derived SLA, analytics, search, notification, and audit views do not become
+  competing sources of truth
 
 ---
 
 # Backlog
 
-Future opportunities not yet prioritized:
+Future opportunities intentionally deferred beyond Phase 2:
 
-* Feature flags
-* Multi-tenancy
 * Localization
-* Dark mode
-* Notification channels
+* External notification channels
 * Advanced exports
 * Bulk operations
 * Workflow templates marketplace
 * Organizational hierarchy visualization
 * Calendar integrations
 * Operational scheduling
-* SLA tracking
-* Incident management
 * Knowledge base
 * AI-assisted workflows
 

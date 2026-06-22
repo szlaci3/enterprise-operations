@@ -1,6 +1,8 @@
 export interface BrowserStorageEntry {
   bytes: number
+  format: 'legacy' | 'versioned'
   key: string
+  schemaVersion: number | null
 }
 
 export interface BrowserStorageDiagnostics {
@@ -34,6 +36,7 @@ export const browserStorage: BrowserStorage = {
         )
         .map((key) => ({
           bytes: new Blob([window.localStorage.getItem(key) ?? '']).size,
+          ...getStorageMetadata(window.localStorage.getItem(key)),
           key,
         }))
         .sort((left, right) => right.bytes - left.bytes)
@@ -47,6 +50,7 @@ export const browserStorage: BrowserStorage = {
         .filter(([key]) => key.startsWith('enterprise-operations-'))
         .map(([key, value]) => ({
           bytes: new Blob([JSON.stringify(value)]).size,
+          ...getValueMetadata(value),
           key,
         }))
       return {
@@ -91,4 +95,34 @@ export const browserStorage: BrowserStorage = {
       // The dashboard remains usable when durable browser storage is blocked.
     }
   },
+}
+
+function getValueMetadata(value: unknown): Pick<
+  BrowserStorageEntry,
+  'format' | 'schemaVersion'
+> {
+  if (
+    value &&
+    typeof value === 'object' &&
+    'data' in value &&
+    'schemaVersion' in value &&
+    typeof value.schemaVersion === 'number'
+  ) {
+    return {
+      format: 'versioned',
+      schemaVersion: value.schemaVersion,
+    }
+  }
+  return { format: 'legacy', schemaVersion: null }
+}
+
+function getStorageMetadata(
+  value: string | null,
+): Pick<BrowserStorageEntry, 'format' | 'schemaVersion'> {
+  if (value === null) return { format: 'legacy', schemaVersion: null }
+  try {
+    return getValueMetadata(JSON.parse(value) as unknown)
+  } catch {
+    return { format: 'legacy', schemaVersion: null }
+  }
 }

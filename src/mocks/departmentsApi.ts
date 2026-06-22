@@ -1,4 +1,4 @@
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 import {
   departmentsSchema,
   type Department,
@@ -126,38 +126,34 @@ const seedDepartments: Department[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readDepartments(): Department[] {
-  const persisted = departmentsSchema.safeParse(
-    browserStorage.read(departmentsStorageKey),
-  )
-
-  if (persisted.success) {
-    return persisted.data
-  }
-
-  browserStorage.write(departmentsStorageKey, seedDepartments)
-  return seedDepartments
-}
+const departmentsStore = createVersionedStore({
+  key: departmentsStorageKey,
+  schema: departmentsSchema,
+  seed: () => seedDepartments,
+  version: 1,
+})
 
 function writeDepartments(departments: Department[]) {
-  browserStorage.write(departmentsStorageKey, departments)
+  departmentsStore.write(departments)
 }
 
 export async function listDepartmentsApi(): Promise<unknown> {
   await delay(320)
-  return readDepartments()
+  return departmentsStore.read()
 }
 
 export async function getDepartmentApi(id: string): Promise<unknown> {
   await delay(240)
-  return readDepartments().find((department) => department.id === id) ?? null
+  return (
+    departmentsStore.read().find((department) => department.id === id) ?? null
+  )
 }
 
 export async function createDepartmentApi(
   department: Department,
 ): Promise<unknown> {
   await delay(420)
-  const departments = readDepartments()
+  const departments = departmentsStore.read()
   writeDepartments([...departments, department])
   return department
 }
@@ -166,9 +162,8 @@ export async function updateDepartmentApi(
   department: Department,
 ): Promise<unknown> {
   await delay(420)
-  const departments = readDepartments()
   writeDepartments(
-    departments.map((item) =>
+    departmentsStore.read().map((item) =>
       item.id === department.id ? department : item,
     ),
   )
@@ -178,6 +173,6 @@ export async function updateDepartmentApi(
 export async function deleteDepartmentApi(id: string): Promise<void> {
   await delay(360)
   writeDepartments(
-    readDepartments().filter((department) => department.id !== id),
+    departmentsStore.read().filter((department) => department.id !== id),
   )
 }

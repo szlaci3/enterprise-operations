@@ -2,29 +2,29 @@ import {
   runtimeIncidentsSchema,
   type RuntimeIncident,
 } from '../features/diagnostics/schemas/diagnosticsSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const incidentsStorageKey = 'enterprise-operations-runtime-incidents'
 
-function readIncidents(): RuntimeIncident[] {
-  const persisted = runtimeIncidentsSchema.safeParse(
-    browserStorage.read(incidentsStorageKey),
-  )
-  return persisted.success ? persisted.data : []
-}
+const runtimeIncidentsStore = createVersionedStore({
+  key: incidentsStorageKey,
+  schema: runtimeIncidentsSchema,
+  seed: () => [],
+  version: 1,
+})
 
 export async function listRuntimeIncidentsApi(): Promise<unknown> {
-  return readIncidents()
+  return runtimeIncidentsStore.read()
 }
 
 export async function appendRuntimeIncidentApi(
   incident: RuntimeIncident,
 ): Promise<unknown> {
-  const incidents = [...readIncidents(), incident].slice(-100)
-  browserStorage.write(incidentsStorageKey, incidents)
+  const incidents = [...runtimeIncidentsStore.read(), incident].slice(-100)
+  runtimeIncidentsStore.write(incidents)
   return incident
 }
 
 export async function clearRuntimeIncidentsApi(): Promise<void> {
-  browserStorage.remove(incidentsStorageKey)
+  runtimeIncidentsStore.remove()
 }

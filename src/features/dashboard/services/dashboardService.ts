@@ -2,7 +2,7 @@ import {
   acknowledgeDashboardAlert,
   getDashboardSnapshot,
 } from '../../../mocks/dashboardApi'
-import { browserStorage } from '../../../services/persistence/browserStorage'
+import { createVersionedStore } from '../../../services/persistence/versionedStore'
 import {
   acknowledgedAlertIdsSchema,
   dashboardSnapshotSchema,
@@ -12,26 +12,25 @@ import {
 
 const acknowledgedAlertsKey = 'enterprise-operations-acknowledged-alerts'
 
-function getAcknowledgedAlertIds(): string[] {
-  const result = acknowledgedAlertIdsSchema.safeParse(
-    browserStorage.read(acknowledgedAlertsKey),
-  )
-
-  return result.success ? result.data : []
-}
+const acknowledgedAlertsStore = createVersionedStore({
+  key: acknowledgedAlertsKey,
+  schema: acknowledgedAlertIdsSchema,
+  seed: () => [],
+  version: 1,
+})
 
 export const dashboardService = {
   async acknowledgeAlert(alertId: string): Promise<void> {
     await acknowledgeDashboardAlert()
-    const ids = new Set(getAcknowledgedAlertIds())
+    const ids = new Set(acknowledgedAlertsStore.read())
     ids.add(alertId)
-    browserStorage.write(acknowledgedAlertsKey, [...ids])
+    acknowledgedAlertsStore.write([...ids])
   },
 
   async getSnapshot(period: DashboardPeriod): Promise<DashboardSnapshot> {
     const response = await getDashboardSnapshot(
       period,
-      getAcknowledgedAlertIds(),
+      acknowledgedAlertsStore.read(),
     )
 
     return dashboardSnapshotSchema.parse(response)

@@ -206,6 +206,7 @@ src/
   services/
     persistence/
       browserStorage.ts
+      versionedStore.ts
 ```
 
 `OverviewPage` is now a route-level composition boundary that renders the
@@ -1274,15 +1275,37 @@ localStorage.getItem(...)
 
 inside feature code.
 
-`browserStorage` is the initial persistence adapter. It serializes JSON,
+`browserStorage` is the low-level persistence adapter. It serializes JSON,
 contains browser storage failures, falls back to session-memory behavior when
-storage is unavailable, and exposes data as `unknown` so callers must validate
-persisted values before use. The dashboard currently persists only
-acknowledged alert identifiers.
+storage is unavailable, and exposes data as `unknown`.
+
+All durable domain stores are created through `createVersionedStore`:
+
+```text
+Domain schema + seed + current schema version
+    → createVersionedStore
+    → { schemaVersion, updatedAt, data }
+    → browserStorage
+```
+
+The versioned store boundary validates every write and read. Existing M1–M20
+raw payloads are treated as legacy version-zero data: if they satisfy the
+current schema, they are wrapped in place on first read. Store-specific legacy
+transformers handle historical shapes that require normalization.
+
+Future changes declare ordered migrations keyed by their source version. A
+stored envelope is migrated one version at a time and validated against the
+current domain schema before the upgraded envelope replaces it.
+
+Missing storage initializes from a validated seed. Invalid payloads,
+unsupported migration gaps, and envelopes written by a newer application
+version raise `PersistenceMigrationError`; the original value remains intact.
+This intentionally replaces the former behavior where a schema mismatch could
+silently overwrite persisted user data with seeds.
 
 The department mock API persists the complete validated collection under a
-domain-specific storage key. Missing or invalid stored collections are replaced
-with realistic seed data at the mock boundary.
+domain-specific versioned storage key. A genuinely missing collection is
+initialized with realistic seed data.
 
 The user mock API persists user identities and the team catalog under separate
 domain keys. User records store normalized identifiers for department, manager,
@@ -1335,10 +1358,11 @@ replace content data URLs with object-storage references without changing the
 document metadata, version, or link contracts.
 
 The settings mock API persists organization policy, feature rollout,
-administrative history, and per-user preferences in one validated store. A
-one-time read migration preserves the theme from the former Zustand-persisted
-UI record. Notification preferences remain in the notification domain because
-they directly govern event projection policy.
+administrative history, and per-user preferences in one validated versioned
+store. Seed initialization can preserve the theme from the former
+Zustand-persisted UI record. Notification preferences retain a dedicated
+legacy transformer that adds later subscription keys while preserving existing
+choices.
 
 The offline mock API persists validated operations under a dedicated storage
 key. Each task operation stores its authoritative base timestamp, optimistic
@@ -1350,12 +1374,16 @@ Incident records contain error name, bounded message, bounded stack, route,
 source, and timestamp. Health snapshots are derived and not persisted.
 
 `browserStorage.diagnose()` performs a temporary write probe and returns only
-enterprise storage key names and byte sizes. It does not expose stored values
-to the diagnostics presentation layer.
+enterprise storage key names, byte sizes, persistence format, and schema
+version. It does not expose stored values to the diagnostics presentation
+layer. The diagnostics workspace reports the number of versioned and remaining
+legacy entries and labels the schema version of large stores.
 
-The access mock synchronizes protected system roles with their code-owned seed
-definitions when roles are read. This ensures newly introduced permission keys
-reach system administrators without overwriting editable custom roles.
+The access mock prepares raw legacy seeded roles once when they are wrapped,
+adding capabilities introduced after those roles were first persisted. It also
+synchronizes protected system roles with code-owned definitions on read. After
+wrapping, editable non-system roles are no longer subject to one-off marker-key
+migrations.
 
 ---
 

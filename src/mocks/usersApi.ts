@@ -4,7 +4,7 @@ import {
   type Team,
   type User,
 } from '../features/users/schemas/userSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const usersStorageKey = 'enterprise-operations-users'
 const teamsStorageKey = 'enterprise-operations-teams'
@@ -150,51 +150,49 @@ const seedUsers: User[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readUsers(): User[] {
-  const persisted = usersSchema.safeParse(browserStorage.read(usersStorageKey))
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(usersStorageKey, seedUsers)
-  return seedUsers
-}
+const usersStore = createVersionedStore({
+  key: usersStorageKey,
+  schema: usersSchema,
+  seed: () => seedUsers,
+  version: 1,
+})
 
 function writeUsers(users: User[]) {
-  browserStorage.write(usersStorageKey, users)
+  usersStore.write(users)
 }
 
-function readTeams(): Team[] {
-  const persisted = teamsSchema.safeParse(browserStorage.read(teamsStorageKey))
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(teamsStorageKey, seedTeams)
-  return seedTeams
-}
+const teamsStore = createVersionedStore({
+  key: teamsStorageKey,
+  schema: teamsSchema,
+  seed: () => seedTeams,
+  version: 1,
+})
 
 export async function listUsersApi(): Promise<unknown> {
   await delay(320)
-  return readUsers()
+  return usersStore.read()
 }
 
 export async function getUserApi(id: string): Promise<unknown> {
   await delay(240)
-  return readUsers().find((user) => user.id === id) ?? null
+  return usersStore.read().find((user) => user.id === id) ?? null
 }
 
 export async function listTeamsApi(): Promise<unknown> {
   await delay(180)
-  return readTeams()
+  return teamsStore.read()
 }
 
 export async function createUserApi(user: User): Promise<unknown> {
   await delay(420)
-  writeUsers([...readUsers(), user])
+  writeUsers([...usersStore.read(), user])
   return user
 }
 
 export async function updateUserApi(user: User): Promise<unknown> {
   await delay(420)
-  writeUsers(readUsers().map((item) => (item.id === user.id ? user : item)))
+  writeUsers(
+    usersStore.read().map((item) => (item.id === user.id ? user : item)),
+  )
   return user
 }

@@ -2,7 +2,7 @@ import {
   workflowDefinitionsSchema,
   type WorkflowDefinition,
 } from '../features/workflows/schemas/workflowSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const workflowsStorageKey = 'enterprise-operations-workflows'
 
@@ -155,36 +155,32 @@ const seedWorkflows: WorkflowDefinition[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readWorkflows(): WorkflowDefinition[] {
-  const persisted = workflowDefinitionsSchema.safeParse(
-    browserStorage.read(workflowsStorageKey),
-  )
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(workflowsStorageKey, seedWorkflows)
-  return seedWorkflows
-}
+const workflowsStore = createVersionedStore({
+  key: workflowsStorageKey,
+  schema: workflowDefinitionsSchema,
+  seed: () => seedWorkflows,
+  version: 1,
+})
 
 function writeWorkflows(workflows: WorkflowDefinition[]) {
-  browserStorage.write(workflowsStorageKey, workflows)
+  workflowsStore.write(workflows)
 }
 
 export async function listWorkflowsApi(): Promise<unknown> {
   await delay(300)
-  return readWorkflows()
+  return workflowsStore.read()
 }
 
 export async function getWorkflowApi(id: string): Promise<unknown> {
   await delay(220)
-  return readWorkflows().find((workflow) => workflow.id === id) ?? null
+  return workflowsStore.read().find((workflow) => workflow.id === id) ?? null
 }
 
 export async function createWorkflowApi(
   workflow: WorkflowDefinition,
 ): Promise<unknown> {
   await delay(400)
-  writeWorkflows([...readWorkflows(), workflow])
+  writeWorkflows([...workflowsStore.read(), workflow])
   return workflow
 }
 
@@ -193,7 +189,9 @@ export async function updateWorkflowApi(
 ): Promise<unknown> {
   await delay(400)
   writeWorkflows(
-    readWorkflows().map((item) => (item.id === workflow.id ? workflow : item)),
+    workflowsStore
+      .read()
+      .map((item) => (item.id === workflow.id ? workflow : item)),
   )
   return workflow
 }
@@ -208,5 +206,7 @@ export async function replaceWorkflowsApi(
 
 export async function deleteWorkflowApi(id: string): Promise<void> {
   await delay(340)
-  writeWorkflows(readWorkflows().filter((workflow) => workflow.id !== id))
+  writeWorkflows(
+    workflowsStore.read().filter((workflow) => workflow.id !== id),
+  )
 }

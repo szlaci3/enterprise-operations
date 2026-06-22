@@ -2,7 +2,7 @@ import {
   collaborationStoreSchema,
   type CollaborationStore,
 } from '../features/collaboration/schemas/collaborationSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const collaborationStorageKey = 'enterprise-operations-collaboration'
 
@@ -50,24 +50,21 @@ const seedStore: CollaborationStore = {
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readStore(): CollaborationStore {
-  const persisted = collaborationStoreSchema.safeParse(
-    browserStorage.read(collaborationStorageKey),
-  )
-  if (persisted.success) return persisted.data
-  browserStorage.write(collaborationStorageKey, seedStore)
-  return seedStore
-}
+const collaborationStore = createVersionedStore({
+  key: collaborationStorageKey,
+  schema: collaborationStoreSchema,
+  seed: () => seedStore,
+  version: 1,
+})
 
 export async function getCollaborationStoreApi(): Promise<unknown> {
   await delay(160)
-  return readStore()
+  return collaborationStore.read()
 }
 
 export async function replaceCollaborationStoreApi(
   store: CollaborationStore,
 ): Promise<unknown> {
   await delay(260)
-  browserStorage.write(collaborationStorageKey, store)
-  return store
+  return collaborationStore.write(store)
 }

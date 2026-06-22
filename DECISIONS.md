@@ -2562,6 +2562,129 @@ foundation.
 
 ---
 
+# ADR-028
+
+## Title
+
+Versioned Persistence Envelopes with Ordered In-Place Migrations
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+After M1–M20, durable browser state was validated by each mock API but stored
+as raw domain payloads. Schema changes were handled through local conditionals,
+boolean migration marker keys, or fallback to seed data.
+
+This was workable while domain contracts were young, but Phase 2 will add
+tenant ownership, shared saved views, service commitments, incidents,
+compliance evidence, and broader audit context. Those changes require data
+models to evolve without silently discarding user-created records.
+
+The existing behavior also made it difficult for diagnostics to distinguish a
+current store from an old but still valid payload.
+
+---
+
+### Decision
+
+Persist every durable domain store in a common envelope:
+
+```text
+{
+  schemaVersion,
+  updatedAt,
+  data
+}
+```
+
+Create stores through a typed `createVersionedStore` factory that owns:
+
+* schema validation on every read and write
+* seed initialization only when the storage key is absent
+* automatic wrapping of raw M1–M20 payloads that satisfy the current schema
+* optional legacy transformation for known historical payload shapes
+* ordered migrations from each stored version to the next version
+* final validation before an upgraded envelope is written
+* removal through the same store abstraction
+
+Treat raw payloads as legacy version-zero data rather than inventing envelope
+version zero. The first envelope version is version one.
+
+Do not overwrite invalid data, skip missing migration steps, or downgrade an
+envelope produced by a newer application version. Raise a dedicated
+`PersistenceMigrationError` and preserve the original value for recovery.
+
+Keep `browserStorage` as the low-level failure-containing adapter. Extend its
+metadata-only diagnostics to identify versioned entries and schema versions
+without exposing payload values.
+
+Replace access-control migration marker keys with deterministic preparation of
+raw seeded roles followed by normal code-owned system-role synchronization.
+
+---
+
+### Alternatives Considered
+
+#### Continue Validating Raw Payloads in Each Mock API
+
+Rejected because every domain would continue inventing migration, fallback,
+and error semantics independently.
+
+#### Silently Reseed Invalid Stores
+
+Rejected because schema evolution or partial corruption could erase valid
+user-created business records with no recovery signal.
+
+#### Store One Global Application Schema Version
+
+Rejected because domains evolve independently. A global version would couple
+unrelated migrations and make partial loading harder.
+
+#### Migrate Immediately to IndexedDB
+
+Deferred because the primary problem is schema ownership and migration
+semantics, not storage capacity or transaction APIs. The versioned store
+contract can later sit over an IndexedDB adapter.
+
+#### Retain Boolean Migration Marker Keys
+
+Rejected because marker state can drift from the payload it describes and does
+not encode ordering, validation, or the current store schema.
+
+---
+
+### Consequences
+
+Positive:
+
+* Phase 2 domain models can evolve through explicit, reviewable migrations
+* existing valid browser data upgrades in place without destructive reset
+* writes cannot bypass current domain validation
+* unsupported and future-version data is preserved instead of downgraded
+* diagnostics expose migration posture without exposing business payloads
+* every durable domain uses one persistence lifecycle
+* the contract remains replaceable by a future backend or IndexedDB adapter
+
+Negative:
+
+* the first read of each legacy store performs an additional envelope write
+* migration failures can block an affected feature until recovery occurs
+* migrations require long-term maintenance and regression tests
+* update timestamps describe persistence writes, not authoritative business
+  event time
+* browser-local persistence still cannot provide transactional multi-user
+  guarantees
+
+These trade-offs are accepted because explicit failure is safer than silent
+data loss and because Phase 2 requires durable model evolution.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

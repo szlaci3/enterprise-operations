@@ -2,7 +2,7 @@ import {
   auditStoreSchema,
   type AuditStore,
 } from '../features/audit/schemas/auditSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const auditStoreKey = 'enterprise-operations-audit-store'
 
@@ -14,26 +14,21 @@ const emptyStore: AuditStore = {
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readStore(): AuditStore {
-  const persisted = auditStoreSchema.safeParse(
-    browserStorage.read(auditStoreKey),
-  )
-  if (persisted.success) {
-    return persisted.data
-  }
-  browserStorage.write(auditStoreKey, emptyStore)
-  return emptyStore
-}
+const auditStore = createVersionedStore({
+  key: auditStoreKey,
+  schema: auditStoreSchema,
+  seed: () => emptyStore,
+  version: 1,
+})
 
 export async function getAuditStoreApi(): Promise<unknown> {
   await delay(180)
-  return readStore()
+  return auditStore.read()
 }
 
 export async function replaceAuditStoreApi(
   store: AuditStore,
 ): Promise<unknown> {
   await delay(280)
-  browserStorage.write(auditStoreKey, store)
-  return store
+  return auditStore.write(store)
 }

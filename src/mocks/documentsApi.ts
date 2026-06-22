@@ -2,7 +2,7 @@ import {
   documentsSchema,
   type DocumentRecord,
 } from '../features/documents/schemas/documentSchemas'
-import { browserStorage } from '../services/persistence/browserStorage'
+import { createVersionedStore } from '../services/persistence/versionedStore'
 
 const documentsStorageKey = 'enterprise-operations-documents'
 
@@ -100,34 +100,32 @@ const seedDocuments: DocumentRecord[] = [
 const delay = (milliseconds: number) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 
-function readDocuments(): DocumentRecord[] {
-  const persisted = documentsSchema.safeParse(
-    browserStorage.read(documentsStorageKey),
-  )
-  if (persisted.success) return persisted.data
-  browserStorage.write(documentsStorageKey, seedDocuments)
-  return seedDocuments
-}
+const documentsStore = createVersionedStore({
+  key: documentsStorageKey,
+  schema: documentsSchema,
+  seed: () => seedDocuments,
+  version: 1,
+})
 
 function writeDocuments(documents: DocumentRecord[]) {
-  browserStorage.write(documentsStorageKey, documents)
+  documentsStore.write(documents)
 }
 
 export async function listDocumentsApi(): Promise<unknown> {
   await delay(240)
-  return readDocuments()
+  return documentsStore.read()
 }
 
 export async function getDocumentApi(id: string): Promise<unknown> {
   await delay(180)
-  return readDocuments().find((document) => document.id === id) ?? null
+  return documentsStore.read().find((document) => document.id === id) ?? null
 }
 
 export async function createDocumentApi(
   document: DocumentRecord,
 ): Promise<unknown> {
   await delay(360)
-  writeDocuments([...readDocuments(), document])
+  writeDocuments([...documentsStore.read(), document])
   return document
 }
 
@@ -136,7 +134,7 @@ export async function updateDocumentApi(
 ): Promise<unknown> {
   await delay(340)
   writeDocuments(
-    readDocuments().map((item) =>
+    documentsStore.read().map((item) =>
       item.id === document.id ? document : item,
     ),
   )
