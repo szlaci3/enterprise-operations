@@ -8,7 +8,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
 import { userListOptions } from '../../users/queries/userQueries'
@@ -18,24 +18,84 @@ import type {
   AuditEntityType,
 } from '../schemas/auditSchemas'
 import { AuditActionBadge } from './AuditActionBadge'
+import { useUrlState } from '../../../shared/hooks/useUrlState'
+import { SavedViewToolbar } from '../../views/components/SavedViewToolbar'
+import { useSavedViewUrlState } from '../../views/hooks/useSavedViewUrlState'
+
+const auditViewDefaults = {
+  action: 'all',
+  actor: 'all',
+  dateFrom: '',
+  dateTo: '',
+  entityId: '',
+  entityType: 'all',
+  q: '',
+  sort: 'recent',
+}
+const auditViewStateKeys = [
+  'action',
+  'actor',
+  'dateFrom',
+  'dateTo',
+  'entityId',
+  'entityType',
+  'q',
+  'sort',
+]
 
 export function AuditViewer() {
   const auditQuery = useQuery(auditListOptions())
   const usersQuery = useQuery(userListOptions())
-  const [searchParams] = useSearchParams()
-  const initialEntityType = searchParams.get('entityType')
-  const initialEntityId = searchParams.get('entityId') ?? ''
-  const [search, setSearch] = useState('')
-  const [entityType, setEntityType] = useState<AuditEntityType | 'all'>(
-    initialEntityType === 'approval' || initialEntityType === 'task'
-      ? initialEntityType
-      : 'all',
-  )
-  const [entityId, setEntityId] = useState(initialEntityId)
-  const [action, setAction] = useState<AuditAction | 'all'>('all')
-  const [actorUserId, setActorUserId] = useState('all')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [search, setSearch] = useUrlState<string>({
+    defaultValue: '',
+    key: 'q',
+  })
+  const [entityType, setEntityType] = useUrlState<AuditEntityType | 'all'>({
+    defaultValue: 'all',
+    key: 'entityType',
+    values: ['all', 'approval', 'task'],
+  })
+  const [entityId, setEntityId] = useUrlState<string>({
+    defaultValue: '',
+    key: 'entityId',
+  })
+  const [action, setAction] = useUrlState<AuditAction | 'all'>({
+    defaultValue: 'all',
+    key: 'action',
+    values: [
+      'all',
+      'created',
+      'submitted',
+      'approved',
+      'rejected',
+      'delegated',
+      'escalated',
+      'reassigned',
+      'status-changed',
+      'updated',
+    ],
+  })
+  const [actorUserId, setActorUserId] = useUrlState<string>({
+    defaultValue: 'all',
+    key: 'actor',
+  })
+  const [dateFrom, setDateFrom] = useUrlState<string>({
+    defaultValue: '',
+    key: 'dateFrom',
+  })
+  const [dateTo, setDateTo] = useUrlState<string>({
+    defaultValue: '',
+    key: 'dateTo',
+  })
+  const [sort, setSort] = useUrlState<'recent' | 'oldest'>({
+    defaultValue: 'recent',
+    key: 'sort',
+    values: ['recent', 'oldest'],
+  })
+  const savedView = useSavedViewUrlState({
+    defaults: auditViewDefaults,
+    stateKeys: auditViewStateKeys,
+  })
   const [visibleCount, setVisibleCount] = useState(50)
   const records = useMemo(() => auditQuery.data ?? [], [auditQuery.data])
   const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
@@ -67,7 +127,11 @@ export function AuditViewer() {
             actorName,
           ].some((value) => value.toLowerCase().includes(normalizedSearch)))
       )
-    })
+    }).sort((left, right) =>
+      sort === 'oldest'
+        ? left.createdAt.localeCompare(right.createdAt)
+        : right.createdAt.localeCompare(left.createdAt),
+    )
   }, [
     action,
     actorUserId,
@@ -77,6 +141,7 @@ export function AuditViewer() {
     entityType,
     records,
     search,
+    sort,
     userById,
   ])
   const visibleRecords = filteredRecords.slice(0, visibleCount)
@@ -140,6 +205,23 @@ export function AuditViewer() {
           <p className="mt-2 text-2xl font-semibold">{recentCount}</p>
         </Card>
       </section>
+      <SavedViewToolbar
+        hasActiveState={savedView.hasActiveState}
+        onApply={savedView.apply}
+        onPresentationChange={savedView.setPresentation}
+        presentation={savedView.presentation}
+        resource="audit"
+        state={{
+          action,
+          actor: actorUserId,
+          dateFrom,
+          dateTo,
+          entityId,
+          entityType,
+          q: search,
+          sort,
+        }}
+      />
 
       <Card className="overflow-hidden">
         <div className="space-y-3 border-b border-slate-200 p-4 dark:border-slate-800">
@@ -157,7 +239,7 @@ export function AuditViewer() {
               value={search}
             />
           </label>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <select
               aria-label="Filter entity type"
               className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
@@ -243,6 +325,17 @@ export function AuditViewer() {
               type="date"
               value={dateTo}
             />
+            <select
+              aria-label="Sort audit records"
+              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+              onChange={(event) =>
+                setSort(event.target.value as 'recent' | 'oldest')
+              }
+              value={sort}
+            >
+              <option value="recent">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
           </div>
         </div>
 

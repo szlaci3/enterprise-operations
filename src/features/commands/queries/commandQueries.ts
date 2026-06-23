@@ -18,8 +18,13 @@ export const commandSearchOptions = (
       )
       return searchService.search(
         {
-          filters: { entityTypes: [], status: '' },
+          filters: {
+            entityTypes: [],
+            status: '',
+            updatedWithin: 'all',
+          },
           query,
+          sort: 'relevance',
         },
         permissionKeys,
       )

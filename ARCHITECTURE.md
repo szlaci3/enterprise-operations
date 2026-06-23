@@ -1047,6 +1047,47 @@ department, lifecycle, and query; departments retain lifecycle and query.
 This makes operational views bookmarkable without duplicating server-like
 collections into Zustand or component-local persistence.
 
+## Saved Views and Operational Discovery
+
+Saved views are resource-neutral definitions rather than copies of result
+collections:
+
+```text
+resource + canonical URL state + presentation preferences
+    + owner + visibility + default
+    -> tenant-owned saved view
+```
+
+The shared contract supports tasks, approvals, users, documents, audit, and
+global search. Each feature declares its own allowed URL keys, defaults, sort
+values, columns, and filtering semantics. The saved-view layer only captures
+and reapplies that state; it does not interpret domain predicates or own row
+rendering.
+
+Filter and sort state remains canonical in React Router search parameters.
+Columns and density are presentation preferences stored with the view and
+applied through feature-owned rendering. This keeps views bookmarkable and
+shareable while avoiding a second competing state model.
+
+Saved-view persistence is versioned and tenant-scoped. Query keys use the
+active tenant as their root. Shared views are visible to workspace members,
+but only owners can choose a personal default. Creating shared views and
+administering another owner's shared view requires `views.share`; applying a
+view never bypasses the authorization already enforced by its source service.
+
+Global search uses the same saved-view controls and extends its transient
+adapter index with:
+
+* multi-select entity-type refinement
+* status facets
+* 7, 30, and 90 day update windows
+* relevance and most-recent sorting
+
+Existing named saved searches are migrated once into personal search views,
+then removed from the legacy preference collection. Recent query history
+remains a user search preference because it is activity history rather than a
+reusable operational view.
+
 Mobile navigation is treated as a modal dialog on small screens. Opening moves
 focus into the dialog, Tab remains contained, Escape and the backdrop dismiss
 it, background scrolling is disabled, and focus returns to the launcher.
@@ -1483,9 +1524,15 @@ code-owned to match implemented execution capabilities.
 Analytics snapshots are not persisted. They are derived current-state data and
 live only in TanStack Query caches keyed by period and department segment.
 
-Search preferences are persisted per user under a dedicated storage key.
-Preferences contain only recent query strings and named saved searches. Source
-documents and search results remain ephemeral.
+Search preferences are persisted per user under a dedicated storage key and
+contain recent query strings. Historical named saved searches are accepted for
+migration into the shared saved-view store. Source documents and search
+results remain ephemeral.
+
+Saved views are persisted as validated, tenant-owned definitions under a
+dedicated versioned store. They contain resource identity, canonical string
+state, presentation preferences, ownership, visibility, and default metadata;
+they never persist result records.
 
 The document mock API persists complete validated aggregates. Attachment
 content is stored as a data URL to keep the frontend-only simulation
@@ -1600,10 +1647,15 @@ Analytics schemas validate periods, filters, metric formats and trend
 semantics, weekly series, distributions, and complete snapshots before data
 enters the query cache.
 
-Search schemas validate entity types, requests, filters, ranked results, saved
-searches, and per-user preference collections. Search adapters remain
-responsible for mapping source-specific fields into the common document
-vocabulary.
+Search schemas validate entity types, requests, recency and status filters,
+sort policy, facets, ranked results, legacy saved searches, and per-user
+preference collections. Search adapters remain responsible for mapping
+source-specific fields into the common document vocabulary.
+
+Saved-view schemas validate supported resources, canonical string state,
+presentation density and columns, ownership, visibility, and default metadata.
+The service enforces owner-scoped names and defaults plus permission-aware
+shared-view creation and administration.
 
 Collaboration schemas validate supported entity types, actor attribution,
 parent relationships, comment lifecycle timestamps, mention identities, and

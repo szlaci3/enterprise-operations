@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { ChevronRight, FileText, Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronRight, FileText, Plus } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../../shared/components/Card'
 import { PageHeader } from '../../../shared/components/PageHeader'
@@ -12,12 +12,44 @@ import {
   DocumentClassificationBadge,
   DocumentStatusBadge,
 } from './DocumentBadges'
+import {
+  CollectionEmpty,
+  CollectionError,
+  CollectionLoading,
+  FilterBar,
+  SearchField,
+  SelectFilter,
+} from '../../../shared/components/CollectionWorkspace'
+import { SummaryGrid } from '../../../shared/components/SummaryGrid'
+import { useUrlState } from '../../../shared/hooks/useUrlState'
+import { SavedViewToolbar } from '../../views/components/SavedViewToolbar'
+import { useSavedViewUrlState } from '../../views/hooks/useSavedViewUrlState'
+
+type DocumentSort = 'updated' | 'title' | 'versions'
+const documentViewDefaults = { q: '', sort: 'updated', status: 'all' }
+const documentViewStateKeys = ['q', 'sort', 'status']
 
 export function DocumentLibrary() {
   const documentsQuery = useQuery(documentListOptions())
   const departmentsQuery = useQuery(departmentListOptions())
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<DocumentStatus | 'all'>('all')
+  const [search, setSearch] = useUrlState<string>({
+    defaultValue: '',
+    key: 'q',
+  })
+  const [status, setStatus] = useUrlState<DocumentStatus | 'all'>({
+    defaultValue: 'all',
+    key: 'status',
+    values: ['all', 'draft', 'published', 'archived'],
+  })
+  const [sort, setSort] = useUrlState<DocumentSort>({
+    defaultValue: 'updated',
+    key: 'sort',
+    values: ['updated', 'title', 'versions'],
+  })
+  const savedView = useSavedViewUrlState({
+    defaults: documentViewDefaults,
+    stateKeys: documentViewStateKeys,
+  })
   const documents = useMemo(
     () => documentsQuery.data ?? [],
     [documentsQuery.data],
@@ -33,8 +65,14 @@ export function DocumentLibrary() {
             value.toLowerCase().includes(normalizedSearch),
           ),
       )
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-  }, [documents, search, status])
+      .sort((left, right) => {
+        if (sort === 'title') return left.title.localeCompare(right.title)
+        if (sort === 'versions') {
+          return right.versions.length - left.versions.length
+        }
+        return right.updatedAt.localeCompare(left.updatedAt)
+      })
+  }, [documents, search, sort, status])
   const departmentsById = new Map(
     (departmentsQuery.data ?? []).map((department) => [
       department.id,
@@ -43,28 +81,18 @@ export function DocumentLibrary() {
   )
 
   if (documentsQuery.isPending || departmentsQuery.isPending) {
-    return (
-      <Card className="h-96 animate-pulse bg-slate-100 dark:bg-slate-800">
-        <span className="sr-only">Loading documents</span>
-      </Card>
-    )
+    return <CollectionLoading label="Loading documents" />
   }
 
   if (documentsQuery.isError || departmentsQuery.isError) {
     return (
-      <Card className="p-8 text-center">
-        <h1 className="text-xl font-semibold">Documents could not be loaded</h1>
-        <button
-          className="mt-5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-          onClick={() => {
+      <CollectionError
+        onRetry={() => {
             documentsQuery.refetch()
             departmentsQuery.refetch()
-          }}
-          type="button"
-        >
-          Retry
-        </button>
-      </Card>
+        }}
+        title="Documents could not be loaded"
+      />
     )
   }
 
@@ -87,53 +115,47 @@ export function DocumentLibrary() {
         title="Documents"
       />
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Controlled documents
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{documents.length}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Published
-          </p>
-          <p className="mt-2 text-2xl font-semibold">
-            {documents.filter((document) => document.status === 'published').length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Stored versions
-          </p>
-          <p className="mt-2 text-2xl font-semibold">
-            {documents.reduce(
+      <SummaryGrid
+        ariaLabel="Document summary"
+        metrics={[
+          { label: 'Controlled documents', value: documents.length },
+          {
+            label: 'Published',
+            value: documents.filter(
+              (document) => document.status === 'published',
+            ).length,
+          },
+          {
+            label: 'Stored versions',
+            value: documents.reduce(
               (total, document) => total + document.versions.length,
               0,
-            )}
-          </p>
-        </Card>
-      </section>
+            ),
+          },
+        ]}
+      />
+      <SavedViewToolbar
+        hasActiveState={savedView.hasActiveState}
+        onApply={savedView.apply}
+        onPresentationChange={savedView.setPresentation}
+        presentation={savedView.presentation}
+        resource="documents"
+        state={{ q: search, sort, status }}
+      />
 
       <Card className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-slate-800 sm:flex-row">
-          <label className="relative flex-1">
-            <span className="sr-only">Search documents</span>
-            <Search
-              aria-hidden="true"
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-              onChange={(event) => setSearch(event.target.value)}
+        <FilterBar
+          primary={
+            <SearchField
+              label="Search documents"
+              onChange={setSearch}
               placeholder="Search title or business context"
-              type="search"
               value={search}
             />
-          </label>
-          <select
-            aria-label="Filter document status"
-            className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+          }
+        >
+          <SelectFilter
+            label="Filter document status"
             onChange={(event) =>
               setStatus(event.target.value as DocumentStatus | 'all')
             }
@@ -143,17 +165,25 @@ export function DocumentLibrary() {
             <option value="draft">Draft</option>
             <option value="published">Published</option>
             <option value="archived">Archived</option>
-          </select>
-        </div>
+          </SelectFilter>
+          <SelectFilter
+            label="Sort documents"
+            onChange={(event) =>
+              setSort(event.target.value as DocumentSort)
+            }
+            value={sort}
+          >
+            <option value="updated">Recently updated</option>
+            <option value="title">Title</option>
+            <option value="versions">Most versions</option>
+          </SelectFilter>
+        </FilterBar>
 
         {filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <FileText
-              aria-hidden="true"
-              className="mx-auto size-9 text-slate-300"
-            />
-            <p className="mt-3 font-semibold">No documents match</p>
-          </div>
+          <CollectionEmpty
+            icon={<FileText aria-hidden="true" className="size-9" />}
+            title="No documents match"
+          />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {filtered.map((document) => {

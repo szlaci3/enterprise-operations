@@ -28,6 +28,7 @@ export const permissionKeySchema = z.enum([
   'settings.manage',
   'diagnostics.view',
   'diagnostics.manage',
+  'views.share',
 ])
 
 export const permissionSchema = z.object({
@@ -48,6 +49,7 @@ export const permissionSchema = z.object({
     'Documents',
     'Settings',
     'Diagnostics',
+    'Platform',
   ]),
 })
 

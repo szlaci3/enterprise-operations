@@ -2950,6 +2950,115 @@ with safe migration and strong local isolation.
 
 ---
 
+# ADR-031
+
+## Title
+
+Resource-Neutral Saved Views with Canonical URL State
+
+## Status
+
+Accepted
+
+---
+
+### Context
+
+Operational collections had begun to converge on URL-backed filtering, but
+only global search supported named saved state. Tasks, approvals, users,
+documents, and audit each owned different filters and rendering behavior.
+
+Phase 2 requires reusable personal and shared views without introducing a
+monolithic data-grid abstraction, duplicating query results in persistence, or
+allowing a shared view to become an authorization mechanism.
+
+---
+
+### Decision
+
+Represent a saved view as a tenant-owned, resource-neutral definition:
+
+```text
+resource
+    + Record<string, string> canonical state
+    + columns and density
+    + owner, visibility, and default metadata
+```
+
+Keep filter and sort state canonical in React Router search parameters.
+Features declare their own supported keys, defaults, columns, and semantics,
+then use the shared view layer only to capture and reapply state.
+
+Persist saved views in one versioned tenant-scoped store and root their query
+keys in the active tenant. Permit personal and shared visibility. Defaults are
+owner-specific even when a view is shared. Require `views.share` to create a
+shared view or remove another owner's shared view. Applying a view continues
+to execute the source domain's normal permission-aware query.
+
+Use the same foundation for global search. Extend search requests with
+multi-select entity types, status, update-window filtering, facets, and
+relevance or recency sorting. Migrate prior named saved searches into personal
+search views while retaining recent-query history separately.
+
+---
+
+### Alternatives Considered
+
+#### Build One Generic Enterprise Data Grid
+
+Rejected because the current collections have materially different semantic
+rows, mobile behavior, virtualization needs, boards, timelines, and business
+filters. Shared state capture does not require shared rendering.
+
+#### Persist Filter State Separately in Every Feature
+
+Rejected because ownership, visibility, defaults, migration, permissions, and
+tenant isolation would drift across implementations.
+
+#### Persist Materialized Result Sets
+
+Rejected because saved results become stale, increase local storage pressure,
+and risk exposing records after permissions change. Views persist intent only
+and always execute current authorized services.
+
+#### Store All View State Only in Local Component State
+
+Rejected because views would not be bookmarkable, reliably shareable, or
+compatible with browser navigation.
+
+#### Make Shared Defaults Apply to Every User
+
+Rejected because default workspace behavior is a personal preference. Shared
+views are discoverable templates; each user chooses their own default.
+
+---
+
+### Consequences
+
+Positive:
+
+* six operational surfaces use one ownership and persistence model
+* URLs remain the inspectable source of truth for filtering and sorting
+* shared views cannot carry or reveal cached result records
+* source services retain authorization and domain semantics
+* incident and compliance queues can adopt the same contract incrementally
+* legacy saved searches upgrade without a destructive reset
+
+Negative:
+
+* saved state uses string serialization and each feature must parse its keys
+* renamed or removed filter keys will require saved-view migrations
+* shared views currently use workspace-wide visibility rather than cohorts
+* configurable columns are adopted only where the feature has meaningful
+  optional fields
+* the frontend simulation cannot enforce sharing policy against a malicious
+  client; a backend must repeat tenant and permission checks
+
+These trade-offs are accepted to gain consistent operational discovery without
+flattening distinct business interfaces into a premature grid framework.
+
+---
+
 # Future Decisions
 
 The following topics will likely require future ADRs:

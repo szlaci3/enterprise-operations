@@ -29,9 +29,12 @@ import { userListOptions } from '../../users/queries/userQueries'
 import { taskListOptions } from '../queries/taskQueries'
 import type { Task, TaskStatus } from '../schemas/taskSchemas'
 import { TaskPriorityBadge, TaskStatusBadge } from './TaskBadges'
+import { SavedViewToolbar } from '../../views/components/SavedViewToolbar'
+import { useSavedViewUrlState } from '../../views/hooks/useSavedViewUrlState'
 
 type QueueFilter = 'mine' | 'department' | 'all'
 type ViewMode = 'list' | 'board'
+type TaskSort = 'due' | 'updated' | 'priority'
 const queueOptions = [
   { label: 'My work', value: 'mine' },
   { label: 'My department', value: 'department' },
@@ -52,6 +55,14 @@ const boardStatuses: TaskStatus[] = [
   'completed',
   'cancelled',
 ]
+const taskViewDefaults = {
+  q: '',
+  queue: 'mine',
+  sort: 'due',
+  status: 'all',
+  view: 'list',
+}
+const taskViewStateKeys = ['q', 'queue', 'sort', 'status', 'view']
 
 function TaskRow({
   task,
@@ -120,6 +131,15 @@ export function TaskList() {
     key: 'view',
     values: ['list', 'board'],
   })
+  const [sort, setSort] = useUrlState<TaskSort>({
+    defaultValue: 'due',
+    key: 'sort',
+    values: ['due', 'updated', 'priority'],
+  })
+  const savedView = useSavedViewUrlState({
+    defaults: taskViewDefaults,
+    stateKeys: taskViewStateKeys,
+  })
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data])
   const users = usersQuery.data ?? []
   const departments = departmentsQuery.data ?? []
@@ -147,12 +167,23 @@ export function TaskList() {
             value.toLowerCase().includes(normalizedSearch),
           ),
       )
-      .sort(
-        (left, right) =>
+      .sort((left, right) => {
+        if (sort === 'updated') {
+          return right.updatedAt.localeCompare(left.updatedAt)
+        }
+        if (sort === 'priority') {
+          const rank = { critical: 3, high: 2, normal: 1, low: 0 }
+          return (
+            rank[right.priority] - rank[left.priority] ||
+            left.dueDate.localeCompare(right.dueDate)
+          )
+        }
+        return (
           left.dueDate.localeCompare(right.dueDate) ||
-          right.updatedAt.localeCompare(left.updatedAt),
-      )
-  }, [currentUser?.departmentId, queue, search, status, tasks])
+          right.updatedAt.localeCompare(left.updatedAt)
+        )
+      })
+  }, [currentUser?.departmentId, queue, search, sort, status, tasks])
 
   if (
     tasksQuery.isPending ||
@@ -214,8 +245,20 @@ export function TaskList() {
           { label: 'Completed tasks', value: completedCount },
         ]}
       />
+      <SavedViewToolbar
+        hasActiveState={savedView.hasActiveState}
+        onApply={savedView.apply}
+        onPresentationChange={savedView.setPresentation}
+        presentation={savedView.presentation}
+        resource="tasks"
+        state={{ q: search, queue, sort, status, view }}
+      />
 
-      <Card className="overflow-hidden">
+      <Card
+        className={`overflow-hidden ${
+          savedView.presentation.density === 'compact' ? 'text-sm' : ''
+        }`}
+      >
         <FilterBar
           primary={
             <SearchField
@@ -267,6 +310,15 @@ export function TaskList() {
               <option value="blocked">Blocked</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
+          </SelectFilter>
+          <SelectFilter
+            label="Sort tasks"
+            onChange={(event) => setSort(event.target.value as TaskSort)}
+            value={sort}
+          >
+            <option value="due">Due date</option>
+            <option value="updated">Recently updated</option>
+            <option value="priority">Priority</option>
           </SelectFilter>
         </FilterBar>
 

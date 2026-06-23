@@ -83,7 +83,7 @@ platform foundations required to support it.
 
 Status: ACTIVE
 
-Active Milestone: M24 – Saved Views and Advanced Operational Search
+Active Milestone: M25 – Service Catalog and SLA Commitments
 
 Objective:
 
@@ -870,19 +870,28 @@ Ownership Strategy:
 
 ## M24 – Saved Views and Advanced Operational Search
 
-Status: Active
+Status: Completed (June 23, 2026)
 
 Objective:
 
 Create one reusable discovery model for repeated operational work.
 
-Planned Scope:
+Delivered:
 
-* Shared filter and sort expression contracts
-* Personal and shared saved views with ownership, defaults, and visibility
-* Configurable columns and density for high-volume queues
-* Faceted search, recent filters, and cross-domain result refinement
-* Permission-aware view sharing and canonical URL state
+* One tenant-scoped saved-view contract for tasks, approvals, users, documents,
+  audit, and global search
+* Personal and shared visibility, owner-specific defaults, duplicate-name
+  protection, and permission-aware sharing and administration
+* Canonical URL state for saved filters and sorting, with presentation state
+  for configurable columns and comfortable or compact density
+* Shared saved-view controls adopted without replacing domain-owned collection
+  rendering or business filter semantics
+* Advanced search refinement with multi-select entity types, status facets,
+  recent-update windows, relevance or recency sorting, and result counts
+* Automatic migration of existing personal saved searches into the shared
+  saved-view foundation
+* Tenant-prefixed query identity and tenant-owned versioned persistence so
+  views and defaults cannot cross workspace boundaries
 
 Exit Criteria:
 
@@ -890,6 +899,12 @@ Exit Criteria:
   the same saved-view foundation
 * Saved views survive reload and can be shared without exposing unauthorized
   records
+
+Verification:
+
+* Production build passes
+* ESLint passes
+* Development server responds successfully for routed application URLs
 
 ---
 

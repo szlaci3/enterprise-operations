@@ -21,8 +21,24 @@ import {
 import { SummaryGrid } from '../../../shared/components/SummaryGrid'
 import { useUrlState } from '../../../shared/hooks/useUrlState'
 import { PermissionGate } from '../../access/components/PermissionGate'
+import { SavedViewToolbar } from '../../views/components/SavedViewToolbar'
+import { useSavedViewUrlState } from '../../views/hooks/useSavedViewUrlState'
 
 type StatusFilter = UserStatus | 'all'
+type UserSort = 'name' | 'updated' | 'status'
+const userViewDefaults = {
+  department: 'all',
+  q: '',
+  sort: 'name',
+  status: 'all',
+}
+const userViewStateKeys = ['department', 'q', 'sort', 'status']
+const userColumns = [
+  { key: 'department', label: 'Department' },
+  { key: 'manager', label: 'Manager' },
+  { key: 'teams', label: 'Teams' },
+  { key: 'status', label: 'Status' },
+]
 
 export function UserDirectory() {
   const usersQuery = useQuery(userListOptions())
@@ -40,6 +56,20 @@ export function UserDirectory() {
     defaultValue: 'all',
     key: 'department',
   })
+  const [sort, setSort] = useUrlState<UserSort>({
+    defaultValue: 'name',
+    key: 'sort',
+    values: ['name', 'updated', 'status'],
+  })
+  const savedView = useSavedViewUrlState({
+    defaults: userViewDefaults,
+    stateKeys: userViewStateKeys,
+  })
+  const visibleColumns =
+    savedView.presentation.columns.length > 0
+      ? savedView.presentation.columns
+      : userColumns.map((column) => column.key)
+  const tableColumnCount = visibleColumns.length + 2
 
   const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data])
   const departments = useMemo(
@@ -65,12 +95,21 @@ export function UserDirectory() {
           user.jobTitle,
         ].some((value) => value.toLowerCase().includes(normalizedSearch))
       })
-      .sort((left, right) =>
-        `${left.lastName}${left.firstName}`.localeCompare(
+      .sort((left, right) => {
+        if (sort === 'updated') {
+          return right.updatedAt.localeCompare(left.updatedAt)
+        }
+        if (sort === 'status') {
+          return (
+            left.status.localeCompare(right.status) ||
+            left.lastName.localeCompare(right.lastName)
+          )
+        }
+        return `${left.lastName}${left.firstName}`.localeCompare(
           `${right.lastName}${right.firstName}`,
-        ),
-      )
-  }, [departmentId, search, status, users])
+        )
+      })
+  }, [departmentId, search, sort, status, users])
   const virtualRows = useVirtualRows({
     count: filtered.length,
     rowHeight: 73,
@@ -128,6 +167,15 @@ export function UserDirectory() {
           { label: 'Pending invitations', value: invitedUsers },
         ]}
       />
+      <SavedViewToolbar
+        availableColumns={userColumns}
+        hasActiveState={savedView.hasActiveState}
+        onApply={savedView.apply}
+        onPresentationChange={savedView.setPresentation}
+        presentation={savedView.presentation}
+        resource="users"
+        state={{ department: departmentId, q: search, sort, status }}
+      />
 
       <Card className="overflow-hidden">
         <FilterBar
@@ -168,6 +216,15 @@ export function UserDirectory() {
             <option value="suspended">Suspended</option>
             <option value="deactivated">Deactivated</option>
           </SelectFilter>
+          <SelectFilter
+            label="Sort users"
+            onChange={(event) => setSort(event.target.value as UserSort)}
+            value={sort}
+          >
+            <option value="name">Name</option>
+            <option value="updated">Recently updated</option>
+            <option value="status">Lifecycle status</option>
+          </SelectFilter>
         </FilterBar>
 
         {filtered.length === 0 ? (
@@ -189,10 +246,18 @@ export function UserDirectory() {
               <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wider text-slate-500 shadow-[0_1px_0_0_var(--color-slate-200)] dark:bg-slate-800 dark:text-slate-400 dark:shadow-[0_1px_0_0_var(--color-slate-700)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold" scope="col">User</th>
-                  <th className="px-5 py-3 font-semibold" scope="col">Department</th>
-                  <th className="px-5 py-3 font-semibold" scope="col">Manager</th>
-                  <th className="px-5 py-3 font-semibold" scope="col">Teams</th>
-                  <th className="px-5 py-3 font-semibold" scope="col">Status</th>
+                  {visibleColumns.includes('department') ? (
+                    <th className="px-5 py-3 font-semibold" scope="col">Department</th>
+                  ) : null}
+                  {visibleColumns.includes('manager') ? (
+                    <th className="px-5 py-3 font-semibold" scope="col">Manager</th>
+                  ) : null}
+                  {visibleColumns.includes('teams') ? (
+                    <th className="px-5 py-3 font-semibold" scope="col">Teams</th>
+                  ) : null}
+                  {visibleColumns.includes('status') ? (
+                    <th className="px-5 py-3 font-semibold" scope="col">Status</th>
+                  ) : null}
                   <th className="w-12 px-5 py-3" scope="col">
                     <span className="sr-only">Open profile</span>
                   </th>
@@ -202,7 +267,7 @@ export function UserDirectory() {
                 {virtualRows.paddingTop > 0 ? (
                   <tr aria-hidden="true">
                     <td
-                      colSpan={6}
+                      colSpan={tableColumnCount}
                       style={{ height: virtualRows.paddingTop }}
                     />
                   </tr>
@@ -218,7 +283,14 @@ export function UserDirectory() {
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/40"
                       key={user.id}
                     >
-                      <th className="px-5 py-4" scope="row">
+                      <th
+                        className={
+                          savedView.presentation.density === 'compact'
+                            ? 'px-5 py-2.5'
+                            : 'px-5 py-4'
+                        }
+                        scope="row"
+                      >
                         <Link
                           className="flex items-center gap-3"
                           to={`/users/${user.id}`}
@@ -234,23 +306,31 @@ export function UserDirectory() {
                           </span>
                         </Link>
                       </th>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
-                        {department?.name ?? 'Unassigned'}
-                      </td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
-                        {manager
-                          ? `${manager.firstName} ${manager.lastName}`
-                          : 'No manager'}
-                      </td>
-                      <td className="px-5 py-4">
+                      {visibleColumns.includes('department') ? (
+                        <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                          {department?.name ?? 'Unassigned'}
+                        </td>
+                      ) : null}
+                      {visibleColumns.includes('manager') ? (
+                        <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                          {manager
+                            ? `${manager.firstName} ${manager.lastName}`
+                            : 'No manager'}
+                        </td>
+                      ) : null}
+                      {visibleColumns.includes('teams') ? (
+                        <td className="px-5 py-4">
                         <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                           <Users aria-hidden="true" className="size-4 text-slate-400" />
                           {user.teamIds.length}
                         </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <UserStatusBadge status={user.status} />
-                      </td>
+                        </td>
+                      ) : null}
+                      {visibleColumns.includes('status') ? (
+                        <td className="px-5 py-4">
+                          <UserStatusBadge status={user.status} />
+                        </td>
+                      ) : null}
                       <td className="px-5 py-4">
                         <Link
                           aria-label={`Open ${user.firstName} ${user.lastName}`}
@@ -266,7 +346,7 @@ export function UserDirectory() {
                 {virtualRows.paddingBottom > 0 ? (
                   <tr aria-hidden="true">
                     <td
-                      colSpan={6}
+                      colSpan={tableColumnCount}
                       style={{ height: virtualRows.paddingBottom }}
                     />
                   </tr>

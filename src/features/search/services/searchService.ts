@@ -247,7 +247,15 @@ export const searchService = {
     const parsed = searchRequestSchema.parse(request)
     const normalizedQuery = normalize(parsed.query)
     const documents = await buildIndex(permissionKeys)
-    const results = documents
+    const cutoff =
+      parsed.filters.updatedWithin === 'all'
+        ? null
+        : Date.now() -
+          Number.parseInt(parsed.filters.updatedWithin, 10) *
+            24 *
+            60 *
+            60_000
+    const refinedDocuments = documents
       .filter(
         (document) =>
           parsed.filters.entityTypes.length === 0 ||
@@ -258,20 +266,44 @@ export const searchService = {
           !parsed.filters.status ||
           document.status === parsed.filters.status,
       )
+      .filter(
+        (document) =>
+          cutoff === null || new Date(document.updatedAt).getTime() >= cutoff,
+      )
+    const scored = refinedDocuments
       .map((document) => ({
         ...document,
         score: scoreDocument(document, normalizedQuery),
       }))
       .filter((document) => !normalizedQuery || document.score > 0)
-      .sort(
-        (left, right) =>
-          right.score - left.score ||
-          right.updatedAt.localeCompare(left.updatedAt),
+      .sort((left, right) =>
+        parsed.sort === 'recent'
+          ? right.updatedAt.localeCompare(left.updatedAt) ||
+            right.score - left.score
+          : right.score - left.score ||
+            right.updatedAt.localeCompare(left.updatedAt),
       )
+    const results = scored
       .slice(0, 100)
       .map((result) => searchResultSchema.parse(result))
+    const countBy = <T extends string>(
+      values: T[],
+    ): { count: number; value: T }[] =>
+      [...new Set(values)]
+        .map((value) => ({
+          count: values.filter((item) => item === value).length,
+          value,
+        }))
+        .sort(
+          (left, right) =>
+            right.count - left.count || left.value.localeCompare(right.value),
+        )
     return searchResponseSchema.parse({
       executedAt: new Date().toISOString(),
+      facets: {
+        entityTypes: countBy(refinedDocuments.map((item) => item.entityType)),
+        statuses: countBy(refinedDocuments.map((item) => item.status)),
+      },
       results,
       total: results.length,
     })

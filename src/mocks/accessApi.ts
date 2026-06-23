@@ -170,6 +170,12 @@ const permissionCatalog: Permission[] = [
     module: 'Diagnostics',
   },
   {
+    action: 'Share',
+    description: 'Publish and administer shared operational saved views.',
+    key: 'views.share',
+    module: 'Platform',
+  },
+  {
     action: 'Manage',
     description: 'Change organization policy and feature rollout controls.',
     key: 'settings.manage',

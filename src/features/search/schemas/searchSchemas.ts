@@ -12,11 +12,13 @@ export const searchEntityTypeSchema = z.enum([
 export const searchFiltersSchema = z.object({
   entityTypes: z.array(searchEntityTypeSchema),
   status: z.string(),
+  updatedWithin: z.enum(['all', '7d', '30d', '90d']).default('all'),
 })
 
 export const searchRequestSchema = z.object({
   filters: searchFiltersSchema,
   query: z.string().trim().max(200),
+  sort: z.enum(['relevance', 'recent']).default('relevance'),
 })
 
 export const searchResultSchema = z.object({
@@ -33,6 +35,20 @@ export const searchResultSchema = z.object({
 
 export const searchResponseSchema = z.object({
   executedAt: z.string().datetime(),
+  facets: z.object({
+    entityTypes: z.array(
+      z.object({
+        count: z.number().int().nonnegative(),
+        value: searchEntityTypeSchema,
+      }),
+    ),
+    statuses: z.array(
+      z.object({
+        count: z.number().int().nonnegative(),
+        value: z.string(),
+      }),
+    ),
+  }),
   results: z.array(searchResultSchema),
   total: z.number().int().nonnegative(),
 })

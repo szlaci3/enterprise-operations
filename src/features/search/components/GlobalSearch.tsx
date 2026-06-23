@@ -5,11 +5,9 @@ import {
   ChevronRight,
   FileSpreadsheet,
   Search,
-  Trash2,
   UserRound,
   Waypoints,
   ClipboardCheck,
-  Star,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -23,15 +21,14 @@ import {
   searchPreferencesOptions,
   searchResultsOptions,
   useRecordRecentSearch,
-  useRemoveSavedSearch,
-  useSaveSearch,
 } from '../queries/searchQueries'
 import {
-  saveSearchFormSchema,
   type SearchEntityType,
   type SearchRequest,
   type SearchResult,
 } from '../schemas/searchSchemas'
+import { SavedViewToolbar } from '../../views/components/SavedViewToolbar'
+import { useSavedViewUrlState } from '../../views/hooks/useSavedViewUrlState'
 
 const entityConfig = {
   approval: { icon: CheckSquare2, label: 'Approvals' },
@@ -53,6 +50,14 @@ const entityTypes: SearchEntityType[] = [
   'user',
   'workflow',
 ]
+const searchViewDefaults = {
+  q: '',
+  sort: 'relevance',
+  status: '',
+  types: '',
+  updated: 'all',
+}
+const searchViewStateKeys = ['q', 'sort', 'status', 'types', 'updated']
 
 function isSearchEntityType(value: string | null): value is SearchEntityType {
   return value !== null && entityTypes.some((entityType) => entityType === value)
@@ -94,16 +99,28 @@ export function GlobalSearch() {
   )
   const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') ?? ''
-  const initialType = searchParams.get('type')
+  const initialTypes = (searchParams.get('types') ?? '')
+    .split(',')
+    .filter(isSearchEntityType)
   const [draftQuery, setDraftQuery] = useState(initialQuery)
   const [request, setRequest] = useState<SearchRequest>({
     filters: {
-      entityTypes: isSearchEntityType(initialType) ? [initialType] : [],
-      status: '',
+      entityTypes: initialTypes,
+      status: searchParams.get('status') ?? '',
+      updatedWithin:
+        searchParams.get('updated') === '7d' ||
+        searchParams.get('updated') === '30d' ||
+        searchParams.get('updated') === '90d'
+          ? searchParams.get('updated') as '7d' | '30d' | '90d'
+          : 'all',
     },
     query: initialQuery,
+    sort: searchParams.get('sort') === 'recent' ? 'recent' : 'relevance',
   })
-  const [saveName, setSaveName] = useState('')
+  const savedView = useSavedViewUrlState({
+    defaults: searchViewDefaults,
+    stateKeys: searchViewStateKeys,
+  })
   const inputRef = useRef<HTMLInputElement>(null)
   const resultsQuery = useQuery({
     ...searchResultsOptions(request, permissionKeys),
@@ -113,8 +130,6 @@ export function GlobalSearch() {
     searchPreferencesOptions(currentSessionUserId),
   )
   const recordRecent = useRecordRecentSearch(currentSessionUserId)
-  const saveSearch = useSaveSearch(currentSessionUserId)
-  const removeSaved = useRemoveSavedSearch(currentSessionUserId)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -125,9 +140,16 @@ export function GlobalSearch() {
     setRequest(nextRequest)
     const params = new URLSearchParams()
     if (nextRequest.query) params.set('q', nextRequest.query)
-    if (nextRequest.filters.entityTypes.length === 1) {
-      params.set('type', nextRequest.filters.entityTypes[0])
+    if (nextRequest.filters.entityTypes.length > 0) {
+      params.set('types', nextRequest.filters.entityTypes.join(','))
     }
+    if (nextRequest.filters.status) {
+      params.set('status', nextRequest.filters.status)
+    }
+    if (nextRequest.filters.updatedWithin !== 'all') {
+      params.set('updated', nextRequest.filters.updatedWithin)
+    }
+    if (nextRequest.sort !== 'relevance') params.set('sort', nextRequest.sort)
     setSearchParams(params, { replace: true })
     if (nextRequest.query.trim()) recordRecent.mutate(nextRequest.query)
   }
@@ -141,13 +163,6 @@ export function GlobalSearch() {
     }
     return groups
   }, [resultsQuery.data?.results])
-
-  const handleSave = async () => {
-    const parsed = saveSearchFormSchema.safeParse({ name: saveName })
-    if (!parsed.success) return
-    await saveSearch.mutateAsync({ name: parsed.data.name, request })
-    setSaveName('')
-  }
 
   if (accessQuery.isPending || preferencesQuery.isPending) {
     return (
@@ -220,13 +235,24 @@ export function GlobalSearch() {
                     ...request,
                     filters: {
                       ...request.filters,
-                      entityTypes: [type],
+                      entityTypes: request.filters.entityTypes.includes(type)
+                        ? request.filters.entityTypes.filter(
+                            (item) => item !== type,
+                          )
+                        : [...request.filters.entityTypes, type],
                     },
                   })
                 }
                 type="button"
               >
                 {entityConfig[type].label}
+                {resultsQuery.data?.facets.entityTypes.find(
+                  (facet) => facet.value === type,
+                )?.count !== undefined
+                  ? ` · ${resultsQuery.data.facets.entityTypes.find(
+                      (facet) => facet.value === type,
+                    )?.count}`
+                  : ''}
               </button>
             ))}
             <select
@@ -252,9 +278,77 @@ export function GlobalSearch() {
               <option value="approved">Approved</option>
               <option value="draft">Draft</option>
             </select>
+            <select
+              aria-label="Filter by update recency"
+              className="h-8 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900"
+              onChange={(event) =>
+                executeSearch({
+                  ...request,
+                  filters: {
+                    ...request.filters,
+                    updatedWithin: event.target.value as
+                      | 'all'
+                      | '7d'
+                      | '30d'
+                      | '90d',
+                  },
+                })
+              }
+              value={request.filters.updatedWithin}
+            >
+              <option value="all">Any update date</option>
+              <option value="7d">Updated in 7 days</option>
+              <option value="30d">Updated in 30 days</option>
+              <option value="90d">Updated in 90 days</option>
+            </select>
+            <select
+              aria-label="Sort search results"
+              className="h-8 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900"
+              onChange={(event) =>
+                executeSearch({
+                  ...request,
+                  sort: event.target.value as 'relevance' | 'recent',
+                })
+              }
+              value={request.sort}
+            >
+              <option value="relevance">Most relevant</option>
+              <option value="recent">Most recently updated</option>
+            </select>
           </div>
         </form>
       </Card>
+      <SavedViewToolbar
+        hasActiveState={savedView.hasActiveState}
+        onApply={(state) => {
+          const types = state.types
+            .split(',')
+            .filter(isSearchEntityType)
+          executeSearch({
+            filters: {
+              entityTypes: types,
+              status: state.status,
+              updatedWithin:
+                state.updated === '7d' ||
+                state.updated === '30d' ||
+                state.updated === '90d'
+                  ? state.updated
+                  : 'all',
+            },
+            query: state.q,
+            sort: state.sort === 'recent' ? 'recent' : 'relevance',
+          })
+        }}
+        presentation={savedView.presentation}
+        resource="search"
+        state={{
+          q: request.query,
+          sort: request.sort,
+          status: request.filters.status,
+          types: request.filters.entityTypes.join(','),
+          updated: request.filters.updatedWithin,
+        }}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
         <Card className="overflow-hidden">
@@ -303,73 +397,6 @@ export function GlobalSearch() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="p-5">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <Star aria-hidden="true" className="size-4 text-amber-500" />
-              Save this search
-            </h2>
-            <input
-              className="mt-4 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
-              onChange={(event) => setSaveName(event.target.value)}
-              placeholder="Search name"
-              value={saveName}
-            />
-            <Button
-              className="mt-3 w-full"
-              disabled={!saveName.trim() || saveSearch.isPending}
-              onClick={handleSave}
-              variant="secondary"
-            >
-              Save search
-            </Button>
-            {saveSearch.error ? (
-              <p className="mt-2 text-xs text-red-600">
-                {saveSearch.error.message}
-              </p>
-            ) : null}
-          </Card>
-
-          <Card className="p-5">
-            <h2 className="font-semibold">Saved searches</h2>
-            <div className="mt-3 space-y-2">
-              {(preferencesQuery.data?.savedSearches ?? []).map((saved) => (
-                <div
-                  className="flex items-center gap-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700"
-                  key={saved.id}
-                >
-                  <button
-                    className="min-w-0 flex-1 text-left"
-                    onClick={() =>
-                      executeSearch({
-                        filters: saved.filters,
-                        query: saved.query,
-                      })
-                    }
-                    type="button"
-                  >
-                    <span className="block truncate text-sm font-semibold">
-                      {saved.name}
-                    </span>
-                    <span className="block truncate text-xs text-slate-400">
-                      {saved.query || 'Browse all'}
-                    </span>
-                  </button>
-                  <button
-                    aria-label={`Delete saved search ${saved.name}`}
-                    className="rounded-md p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                    onClick={() => removeSaved.mutate(saved.id)}
-                    type="button"
-                  >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                  </button>
-                </div>
-              ))}
-              {preferencesQuery.data?.savedSearches.length === 0 ? (
-                <p className="text-sm text-slate-500">No saved searches.</p>
-              ) : null}
-            </div>
-          </Card>
-
           <Card className="p-5">
             <h2 className="font-semibold">Recent searches</h2>
             <div className="mt-3 flex flex-wrap gap-2">

@@ -21,6 +21,8 @@ export const searchKeys = {
       request.query,
       request.filters.status,
       request.filters.entityTypes.join(','),
+      request.filters.updatedWithin,
+      request.sort,
       permissionKeys.join(','),
     ] as const,
 }

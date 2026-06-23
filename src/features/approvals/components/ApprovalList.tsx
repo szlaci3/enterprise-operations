@@ -28,14 +28,24 @@ import {
   ApprovalPriorityBadge,
   ApprovalStatusBadge,
 } from './ApprovalBadges'
+import { SavedViewToolbar } from '../../views/components/SavedViewToolbar'
+import { useSavedViewUrlState } from '../../views/hooks/useSavedViewUrlState'
 
 type QueueFilter = 'assigned' | 'submitted' | 'all'
 type StatusFilter = ApprovalStatus | 'all'
+type ApprovalSort = 'updated' | 'due' | 'priority'
 const queueOptions = [
   { label: 'Assigned to me', value: 'assigned' },
   { label: 'Submitted by me', value: 'submitted' },
   { label: 'All requests', value: 'all' },
 ] as const
+const approvalViewDefaults = {
+  q: '',
+  queue: 'assigned',
+  sort: 'updated',
+  status: 'all',
+}
+const approvalViewStateKeys = ['q', 'queue', 'sort', 'status']
 
 export function ApprovalList() {
   const approvalsQuery = useQuery(approvalListOptions())
@@ -54,7 +64,16 @@ export function ApprovalList() {
     key: 'status',
     values: ['all', 'pending', 'approved', 'rejected'],
   })
+  const [sort, setSort] = useUrlState<ApprovalSort>({
+    defaultValue: 'updated',
+    key: 'sort',
+    values: ['updated', 'due', 'priority'],
+  })
   const [currentTime] = useState(() => Date.now())
+  const savedView = useSavedViewUrlState({
+    defaults: approvalViewDefaults,
+    stateKeys: approvalViewStateKeys,
+  })
   const approvals = useMemo(
     () => approvalsQuery.data ?? [],
     [approvalsQuery.data],
@@ -86,8 +105,15 @@ export function ApprovalList() {
             (value) => value.toLowerCase().includes(normalizedSearch),
           ),
       )
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-  }, [approvals, queue, search, status])
+      .sort((left, right) => {
+        if (sort === 'due') return left.dueDate.localeCompare(right.dueDate)
+        if (sort === 'priority') {
+          const rank = { urgent: 3, high: 2, normal: 1, low: 0 }
+          return rank[right.priority] - rank[left.priority]
+        }
+        return right.updatedAt.localeCompare(left.updatedAt)
+      })
+  }, [approvals, queue, search, sort, status])
 
   if (approvalsQuery.isPending || usersQuery.isPending) {
     return <CollectionLoading label="Loading approvals" />
@@ -150,6 +176,14 @@ export function ApprovalList() {
           },
         ]}
       />
+      <SavedViewToolbar
+        hasActiveState={savedView.hasActiveState}
+        onApply={savedView.apply}
+        onPresentationChange={savedView.setPresentation}
+        presentation={savedView.presentation}
+        resource="approvals"
+        state={{ q: search, queue, sort, status }}
+      />
 
       <Card className="overflow-hidden">
         <FilterBar
@@ -181,6 +215,17 @@ export function ApprovalList() {
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+          </SelectFilter>
+          <SelectFilter
+            label="Sort approvals"
+            onChange={(event) =>
+              setSort(event.target.value as ApprovalSort)
+            }
+            value={sort}
+          >
+            <option value="updated">Recently updated</option>
+            <option value="due">Due date</option>
+            <option value="priority">Priority</option>
           </SelectFilter>
         </FilterBar>
 
